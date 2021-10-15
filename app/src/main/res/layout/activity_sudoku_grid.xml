@@ -11,20 +11,18 @@
             android:layout_height="wrap_content" android:id="@+id/button1"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="16dp"
-            app:layout_constraintTop_toBottomOf="@+id/layout_digits" android:layout_marginTop="8dp"
             android:minWidth="0dp" android:text="Solve"
-    />
+            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"/>
     <ToggleButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:id="@+id/toggle_notes"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="16dp" app:layout_constraintTop_toBottomOf="@+id/layout_digits"
-            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="16dp" android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
             android:minWidth="0dp" android:textOn="Notes" android:textOff="Notes"
     />
-    <!-- app:layout_constraintDimensionRatio="1:1" -->
     <TableLayout
-            android:layout_width="0dp"
+            android:layout_width="0dp" app:layout_constraintDimensionRatio="1:1"
             android:layout_height="0dp"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="8dp" app:layout_constraintStart_toStartOf="parent"
@@ -37,16 +35,17 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
-            android:id="@+id/layout_digits" app:layout_constraintTop_toBottomOf="@+id/table_grid"
-            android:layout_marginTop="8dp" android:layout_marginEnd="8dp" android:layout_marginStart="8dp">
+            android:id="@+id/layout_digits"
+            android:layout_marginEnd="8dp" android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/button1" android:layout_marginBottom="8dp">
     </LinearLayout>
     <LinearLayout
             android:orientation="horizontal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/layout_digits" android:layout_marginTop="8dp"
             android:id="@+id/layout_digits2" app:layout_constraintEnd_toStartOf="@+id/toggle_notes"
             app:layout_constraintStart_toEndOf="@+id/button1" android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp">
+            android:layout_marginEnd="16dp" app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginBottom="8dp">
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
