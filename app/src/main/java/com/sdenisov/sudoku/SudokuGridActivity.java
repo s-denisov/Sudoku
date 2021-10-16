@@ -188,19 +188,27 @@ public class SudokuGridActivity extends AppCompatActivity {
     // Updates the grid, so that it displays all up-to-date information from SudokuData
     private void updateGrid() {
         for (int row = 0; row < rows; row++) {
+            columnLoop:
             for (int column = 0; column < rows; column++) {
                 SudokuData.SudokuCell cellData = sudokuData.getValue(row, column);
+                SudokuCellView cell = cells.get(row * rows + column);
                 if (cellData.getValue() != null) {
                     // row * rows + column is used for index - e.g. if row = 0 and column = 1 then index is rows,
                     // which is correct, as the for loop has just iterated through all columns in the first row,
                     // so the number of cells it has iterated through equals the number of columns which equals rows.
 
                     // Updates the text and the text color
-                    cells.get(row * rows + column).setText(String.valueOf(cellData.getValue()));
-                    cells.get(row * rows + column).setTextColor(cellData.getColor());
+                    cell.setText(String.valueOf(cellData.getValue()));
+                    cell.setTextColor(cellData.getColor());
 
                     // I will consider updating the notes as well, but it isn't necessarily for now, as currently
                     // whenever any notes are changed, updateCellNotes is called (manually)
+                } else {
+                    for (boolean note : cellData.notes) { // Checks if there are any notes
+                        // If there are notes then moves onto next cell, leaving this cell unchanged
+                        if (note) continue columnLoop;
+                    }
+                    cell.setText(""); // If a cell's value is null, its text is removed
                 }
             }
         }
@@ -231,6 +239,7 @@ public class SudokuGridActivity extends AppCompatActivity {
 
     public void solveSudoku(View view) {
         Button button = (Button) view;
+        // A string resource is used for "Solve" and "Unsolve" text, so that the text can be modified easily
         if (button.getText().equals(getText(R.string.solve))) {
             SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
             button.setText(R.string.unsolve);

@@ -46,12 +46,14 @@ public class SudokuSolver {
         }
     }
 
+    // Removes all values added by the solver (i.e. where initialValue is false), allowing the user to modify the input sudoku
     public static void unsolve(SudokuData sudokuData) {
         for (int row = 0; row < sudokuData.getRows(); row++) {
             for (int column = 0; column < sudokuData.getRows(); column++) {
                 SudokuData.SudokuCell cell = sudokuData.getValue(row, column);
                 if (!cell.isInitialValue()) {
                     cell.setValue(null);
+                    cell.setInitialValue(true); // So that if the user inputs a new value, it is highlighted black
                 }
             }
         }
