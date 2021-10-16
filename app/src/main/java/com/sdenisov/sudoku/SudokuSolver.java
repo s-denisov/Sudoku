@@ -45,4 +45,15 @@ public class SudokuSolver {
             index++;
         }
     }
+
+    public static void unsolve(SudokuData sudokuData) {
+        for (int row = 0; row < sudokuData.getRows(); row++) {
+            for (int column = 0; column < sudokuData.getRows(); column++) {
+                SudokuData.SudokuCell cell = sudokuData.getValue(row, column);
+                if (!cell.isInitialValue()) {
+                    cell.setValue(null);
+                }
+            }
+        }
+    }
 }

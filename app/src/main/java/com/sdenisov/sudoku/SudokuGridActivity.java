@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -229,7 +230,16 @@ public class SudokuGridActivity extends AppCompatActivity {
     }
 
     public void solveSudoku(View view) {
-        SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+        Button button = (Button) view;
+        if (button.getText().equals(getText(R.string.solve))) {
+            SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+            button.setText(R.string.unsolve);
+            Log.d("project", "solve");
+        } else if (button.getText().equals(getText(R.string.unsolve))) {
+            SudokuSolver.unsolve(sudokuData); // Removes all values from solving - i.e. values where playerInput is false
+            button.setText(R.string.solve);
+            Log.d("project", "unsolve");
+        }
         updateGrid(); // Updates grid based on new sudokuData object
     }
 }
