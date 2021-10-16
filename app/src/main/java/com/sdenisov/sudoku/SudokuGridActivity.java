@@ -18,7 +18,7 @@ import java.util.List;
 public class SudokuGridActivity extends AppCompatActivity {
 
     private static final int boxRows = 3;
-    private static final int boxColumns = 2;
+    private static final int boxColumns = 3;
     private static final int rows = boxRows * boxColumns;
     // Using a constant allows the backspace button text to be modified easily.
     private static final String BACKSPACE_BUTTON_TEXT = "X";
@@ -33,19 +33,6 @@ public class SudokuGridActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sudoku_grid);
         createGrid();
         createDigitButtons();
-
-        // Initial populating of grid for testing
-        SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
-        cell.setValue(1);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(2, 5);
-        cell.setValue(2);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(4, 2);
-        cell.setValue(6);
-        cell.setInitialValue(false);
-        updateGrid();
-//        updateCellNotes(cells.get(0), new boolean[]{true, true, true, true, false, false, true, true, true});
     }
 
     private void createGrid() {
@@ -239,5 +226,10 @@ public class SudokuGridActivity extends AppCompatActivity {
                             i % (i < 10 ? boxRows : boxRows / 2) == 0 ? "\n" : " ");
         }
         cell.setText(result);
+    }
+
+    public void solveSudoku(View view) {
+        SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+        updateGrid(); // Updates grid based on new sudokuData object
     }
 }

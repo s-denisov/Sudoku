@@ -17,7 +17,7 @@ public class SudokuData {
         private Integer value; // May be null, which represents empty cell.
         // Initial values are values included in the sudoku initially (as part of the problem)
         // while non-initial values are values added later (as part of the solution)
-        private boolean initialValue = false;
+        private boolean initialValue = true;
         // true means present, false means not present. Notes are in order so index 0 corresponds to note 1.
         // It is impossible to set this to an invalid state, so this is public.
         // It is final to make sure the length isn't changed (by reassigning a new array to the variable)
@@ -75,7 +75,7 @@ public class SudokuData {
 
     // The user is allowed access to any cell by requesting the row and column and can then modify the cell using
     // the SudokuCell methods (there are restrictions, but they are located within the SudokuCell class) - as the
-    // cell is passed by reference, any changes made will also occur within this class.
+    // returned SudokuCell variable is a reference, any changes made will also occur within this class.
     // However, the user is not allowed access to the values 2D array, to prevent them from modifying the structure of
     // the array, such as changing its length.
     public SudokuCell getValue(int row, int column) {
