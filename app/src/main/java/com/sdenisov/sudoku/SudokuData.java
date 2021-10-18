@@ -17,7 +17,7 @@ public class SudokuData {
         private Integer value; // May be null, which represents empty cell.
         // Initial values are values included in the sudoku initially (as part of the problem)
         // while non-initial values are values added later (as part of the solution)
-        private boolean initialValue = true;
+        private boolean initialValue = false;
         // true means present, false means not present. Notes are in order so index 0 corresponds to note 1.
         // It is impossible to set this to an invalid state, so this is public.
         // It is final to make sure the length isn't changed (by reassigning a new array to the variable)

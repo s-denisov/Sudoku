@@ -144,12 +144,14 @@ public class SudokuGridActivity extends AppCompatActivity {
                 if (digit.getText() == BACKSPACE_BUTTON_TEXT) {
                     selectedCell.setText("");
                     cellData.setValue(null);
+                    cellData.setInitialValue(false); // This cell is empty so is now allowed to be modified by the solver
                 } else {
                     selectedCell.setText(digit.getText());
                     // Note that the value of the button's text can be converted to an integer, as the only button
                     // where this is not allowed is the backspace button, and we know that this isn't the backspace
                     // button.
                     cellData.setValue(Integer.parseInt(String.valueOf(digit.getText())));
+                    cellData.setInitialValue(true); // To make sure the value is dark and isn't modified by the solver
                 }
             }
         }

@@ -2,47 +2,38 @@ package com.sdenisov.sudoku;
 
 public class SudokuSolver {
     // Works by modifying sudokuData object so doesn't need to return a value.
+
     public static void solve(SudokuData sudokuData) {
         int index = 0; // From left to right, top to bottom
-        indexLoop: // A label for the while loop
+        // When a cell has reached maximum value and still has an error then this is set to false
+        // to show that backtracking is occurring
+        boolean moveForward = true;
+        // rows * rows = rows * columns is the total number of cells within the grid
         while (index < sudokuData.getRows() * sudokuData.getRows()) {
             SudokuData.SudokuCell currentCell = sudokuData.getValue(index / sudokuData.getRows(), // integer division
-                    index % sudokuData.getRows());
-            if (currentCell.getValue() == null) { // If the current cell is empty then it is set to the first value i.e. 1
-                currentCell.setValue(1);
-                currentCell.setInitialValue(false);
-            }
-            while (sudokuData.findErrors().size() != 0) {
-                // If a cell hasn't reached maximum value and there are errors then its value is incremented
-                if (currentCell.getValue() < sudokuData.getRows()) {
+                    index % sudokuData.getRows()); // Finds the cell at the current index
+            if (currentCell.isInitialValue()) {
+                // During backtracking, the algorithm moves backwards past initial value cells. Otherwise, it moves
+                // forwards past them.
+                index = index + (moveForward ? 1 : -1);
+            } else {
+                if (currentCell.getValue() == null) { // If the current cell is empty then it is set to the first value i.e. 1
+                    currentCell.setValue(1);
+                }
+                if (sudokuData.findErrors().size() == 0 && moveForward) {
+                    // This isn't done during backtracking because a value must be changed during backtracking, so we
+                    // can't just move forward without changing a value.
+                    index++;
+                } else if (currentCell.getValue() < sudokuData.getRows()) {
+                    // If the value can be incremented then it is incremented
                     currentCell.setValue(currentCell.getValue() + 1);
-                } // If a cell has reached maximum value and there are still errors then backtracking occurs
-                else {
-                    currentCell.setValue(null); // First, the value of the cell is set to a blank
-                    while (true) {
-                        index--; // Moves back by decrementing index
-                        if (index < 0) {
-                            return; // There are no possible solutions so the solver stops execution
-                        }
-                        SudokuData.SudokuCell currentCellMovingBack
-                                = sudokuData.getValue(index / sudokuData.getRows(),
-                                index % sudokuData.getRows()); // Finds new current cell for moving back
-                        // Cell can only be modified if it is not an initial value
-                        if (!currentCellMovingBack.isInitialValue()) {
-                            if (currentCellMovingBack.getValue() == sudokuData.getRows()) {
-                                // If cell is at maximum value, then its value is set to empty
-                                currentCellMovingBack.setValue(null);
-                            } else {
-                                // If the current cell is not at the maximum value then it is incremented and the
-                                // algorithm restarts from this cell. Moving back stops
-                                currentCellMovingBack.setValue(currentCellMovingBack.getValue() + 1);
-                                continue indexLoop; // Goes to the start of the loop with label indexLoop
-                            }
-                        }
-                    }
+                    moveForward = true; // A value has changed so backtracking no longer occurs
+                } else {
+                    currentCell.setValue(null); // Sets cell to empty
+                    moveForward = false; // Backtracking occurs, with a previous value having to change
+                    index--;
                 }
             }
-            index++;
         }
     }
 
@@ -53,7 +44,6 @@ public class SudokuSolver {
                 SudokuData.SudokuCell cell = sudokuData.getValue(row, column);
                 if (!cell.isInitialValue()) {
                     cell.setValue(null);
-                    cell.setInitialValue(true); // So that if the user inputs a new value, it is highlighted black
                 }
             }
         }
