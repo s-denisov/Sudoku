@@ -32,7 +32,7 @@ public class SudokuData {
         public void setValue(Integer value) {
             if (value == null || 1 <= value && value <= getRows()) {
                 this.value = value;
-                Arrays.fill(notes, false);
+                if (value != null) Arrays.fill(notes, false);
             }
         }
 
