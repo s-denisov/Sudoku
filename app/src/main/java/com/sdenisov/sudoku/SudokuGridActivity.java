@@ -34,6 +34,70 @@ public class SudokuGridActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sudoku_grid);
         createGrid();
         createDigitButtons();
+        SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(1, 2);
+        cell.setValue(3);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(1, 3);
+        cell.setValue(6);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 1);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 4);
+        cell.setValue(9);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 6);
+        cell.setValue(2);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(3, 1);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(3, 5);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 4);
+        cell.setValue(4);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 5);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 6);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(5, 3);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(5, 7);
+        cell.setValue(3);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 2);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 7);
+        cell.setValue(6);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 8);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 2);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 2+1);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 7);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(8, 1);
+        cell.setValue(9);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(8, 6);
+        cell.setValue(4);
+        cell.setInitialValue(true);
+        updateGrid();
     }
 
     private void createGrid() {
@@ -208,7 +272,10 @@ public class SudokuGridActivity extends AppCompatActivity {
                 } else {
                     for (boolean note : cellData.notes) { // Checks if there are any notes
                         // If there are notes then moves onto next cell, leaving this cell unchanged
-                        if (note) continue columnLoop;
+                        if (note) {
+                            updateCellNotes(cell, cellData.notes);
+                            continue columnLoop;
+                        }
                     }
                     cell.setText(""); // If a cell's value is null, its text is removed
                 }
@@ -243,13 +310,14 @@ public class SudokuGridActivity extends AppCompatActivity {
         Button button = (Button) view;
         // A string resource is used for "Solve" and "Unsolve" text, so that the text can be modified easily
         if (button.getText().equals(getText(R.string.solve))) {
+            long before = System.nanoTime();
+            SudokuSolver.unsolve(sudokuData);
             SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
-            button.setText(R.string.unsolve);
-            Log.d("project", "solve");
+            Log.d("project", String.valueOf((double) (System.nanoTime() - before) / 1_000_000_000));
+//            button.setText(R.string.unsolve);
         } else if (button.getText().equals(getText(R.string.unsolve))) {
             SudokuSolver.unsolve(sudokuData); // Removes all values from solving - i.e. values where playerInput is false
             button.setText(R.string.solve);
-            Log.d("project", "unsolve");
         }
         updateGrid(); // Updates grid based on new sudokuData object
     }
