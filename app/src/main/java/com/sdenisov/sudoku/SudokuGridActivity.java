@@ -1,5 +1,6 @@
 package com.sdenisov.sudoku;
 
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -14,6 +15,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SudokuGridActivity extends AppCompatActivity {
@@ -34,7 +36,7 @@ public class SudokuGridActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sudoku_grid);
         createGrid();
         createDigitButtons();
-        SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
+        /*SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
         cell.setValue(8);
         cell.setInitialValue(true);
         cell = sudokuData.getValue(1, 2);
@@ -97,7 +99,7 @@ public class SudokuGridActivity extends AppCompatActivity {
         cell = sudokuData.getValue(8, 6);
         cell.setValue(4);
         cell.setInitialValue(true);
-        updateGrid();
+        updateGrid();*/
     }
 
     private void createGrid() {
@@ -197,6 +199,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                     // Toggles the value of the corresponding note by flipping its boolean value.
                     // Note that the index is valueChosen - 1 as an index of 0 corresponds to note number 1.
                     cellData.notes[valueChosen - 1] = !cellData.notes[valueChosen - 1];
+                    cellData.setValue(null); // Removes the value as notes cannot coexist with a value
                     updateCellNotes(selectedCell, cellData.notes); // Displays the changes to the user
                 }
             } else {
@@ -205,6 +208,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                 TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(selectedCell, 1, 400,
                         1, TypedValue.COMPLEX_UNIT_DIP);
                 // Checks if the digit is the backspace digit by checking its text
+                // Removes all notes as notes cannot exist together with a
                 if (digit.getText() == BACKSPACE_BUTTON_TEXT) {
                     selectedCell.setText("");
                     cellData.setValue(null);
@@ -217,6 +221,8 @@ public class SudokuGridActivity extends AppCompatActivity {
                     cellData.setValue(Integer.parseInt(String.valueOf(digit.getText())));
                     cellData.setInitialValue(true); // To make sure the value is dark and isn't modified by the solver
                 }
+                // Removes all notes as notes cannot coexist with a value
+                Arrays.fill(cellData.notes, false);
             }
         }
         List<Tuple2<Integer, Integer>> errorCoordinates = sudokuData.findErrors();
@@ -273,7 +279,6 @@ public class SudokuGridActivity extends AppCompatActivity {
                     for (boolean note : cellData.notes) { // Checks if there are any notes
                         // If there are notes then moves onto next cell, leaving this cell unchanged
                         if (note) {
-                            updateCellNotes(cell, cellData.notes);
                             continue columnLoop;
                         }
                     }
@@ -311,10 +316,21 @@ public class SudokuGridActivity extends AppCompatActivity {
         // A string resource is used for "Solve" and "Unsolve" text, so that the text can be modified easily
         if (button.getText().equals(getText(R.string.solve))) {
             long before = System.nanoTime();
-            SudokuSolver.unsolve(sudokuData);
-            SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+            boolean solutionExits = SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+            // The time taken by the solver is found by recording the system time before and after and finding the
+            // difference. It is also divided by a billion to convert from nanoseconds to seconds.
             Log.d("project", String.valueOf((double) (System.nanoTime() - before) / 1_000_000_000));
-//            button.setText(R.string.unsolve);
+            if (solutionExits) {
+                // If a solution exists then the button is set to "Unsolve" to allow the user to easily remove all
+                // the filled values
+                button.setText(R.string.unsolve);
+            } else {
+                // If there are no solutions then a dialogue is shown, explaining this to the user.
+                new AlertDialog.Builder(this).setTitle("Error")
+                        .setMessage("This sudoku has no solutions").show();
+                // Note that the button is not set to "Unsolve" as the solver hasn't filled in any values, so the user
+                // can modify the input sudoku immediately after closing the dialogue, without having to click "unsolve"
+            }
         } else if (button.getText().equals(getText(R.string.unsolve))) {
             SudokuSolver.unsolve(sudokuData); // Removes all values from solving - i.e. values where playerInput is false
             button.setText(R.string.solve);

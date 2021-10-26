@@ -8,4 +8,12 @@ public class Tuple2<K, V> extends AbstractMap.SimpleEntry<K, V> {
     public Tuple2(K key, V value) {
         super(key, value);
     }
+
+    public K getFirst() {
+        return getKey();
+    }
+
+    public V getSecond() {
+        return getValue();
+    }
 }

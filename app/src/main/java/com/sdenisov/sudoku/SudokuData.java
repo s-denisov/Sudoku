@@ -2,9 +2,7 @@ package com.sdenisov.sudoku;
 
 import android.graphics.Color;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SudokuData {
@@ -14,6 +12,9 @@ public class SudokuData {
     private final int boxColumns; // Number of columns of boxes in the grid
 
     public class SudokuCell {
+        public int row;
+        public int column;
+
         private Integer value; // May be null, which represents empty cell.
         // Initial values are values included in the sudoku initially (as part of the problem)
         // while non-initial values are values added later (as part of the solution)
@@ -27,19 +28,14 @@ public class SudokuData {
             this.value = value;
         }
 
-        // Sets a value if input is valid. Additionally, if a value is set then all notes are removed.
-        // If the input is invalid then it is ignored.
+        // Sets a value if input is valid. If the input is invalid then it is ignored.
         public void setValue(Integer value) {
             if (value == null || 1 <= value && value <= getRows()) {
                 this.value = value;
-                if (value != null) Arrays.fill(notes, false);
             }
         }
 
-        // If there are any notes, then this returns null so that the object behaves as if there is no value set.
-        // Thus setting any notes effectively removes the value.
         public Integer getValue() {
-            for (boolean note : notes) if (note) return null;
             return value;
         }
 
@@ -66,7 +62,10 @@ public class SudokuData {
         values = new SudokuCell[rows][rows];
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < rows; column++) {
-                values[row][column] = new SudokuCell(null);
+                SudokuCell cell = new SudokuCell(null);
+                cell.row = row;
+                cell.column = column;
+                values[row][column] = cell;
             }
         }
         this.boxRows = boxRows;
@@ -181,5 +180,81 @@ public class SudokuData {
         return new ArrayList<>();
     }
 
+    // A group is a row, column or box - this function doesn't distinguish them. This function takes a row or column and
+    // finds all cells which share a group with the cell at that row or column, excluding that cell itself.
+    // A set is used because we do not care about the order of the result.
+    public Set<SudokuCell> findGroups(int cellRow, int cellColumn) {
+        Set<SudokuCell> result = new HashSet<>(); // A HashSet is an implementation of the Set interface
+        for (int row = 0; row < getRows(); row++) {
+            for (int column = 0; column < getRows(); column++) {
+                // To make sure this isn't the same cell as the input cell
+                if (row != cellRow || column != cellColumn) {
+                    // First condition - same row, second - same column, third - same box. If any of these conditions
+                    // are true, the cell is added to the result.
+                    // The row of the box is found by dividing row by boxColumns (i.e. the number of rows in a box) and
+                    // ignoring the remainder. The column of the box is found by dividing column by boxRows (i.e. the
+                    // number of columns in a box). If the row and column of the box are equal then the cells are in
+                    // the same box.
+                    if (row == cellRow || column == cellColumn ||
+                            (row / boxColumns == cellRow / boxColumns && column / boxRows == cellColumn / boxRows)) {
+                        result.add(getValue(row, column));
+                    }
+                }
+            }
+        }
+        return result;
+    }
 
+    // This returns a set of groups, with each group being a set of cells
+    public Set<Set<SudokuCell>> findAllGroups() {
+        Set<Set<SudokuCell>> result = new HashSet<>();
+        // Iterates through each row and adds the row as a group
+        for (int row = 0; row < getRows(); row++) {
+            Set<SudokuCell> currentRow = new HashSet<>();
+            // The row is populated by iterating through each column and adding the appropriate cell from `values`
+            for (int column = 0; column < getRows(); column++) {
+                currentRow.add(values[row][column]);
+            }
+            result.add(currentRow);
+        }
+        // Iterates through each column and adds the column as a group
+        for (int column = 0; column < getRows(); column++) {
+            Set<SudokuCell> currentColumn = new HashSet<>();
+            // The column is populated by iterating through each column and adding the appropriate cell from `values`
+            for (int row = 0; row < getRows(); row++) {
+                currentColumn.add(values[row][column]);
+            }
+            result.add(currentColumn);
+        }
+        // Iterates through each box and adds the box as a group. This is done by iterating through each boxRow and  boxColumn
+        for (int boxLocationRow = 0; boxLocationRow < boxRows; boxLocationRow++) {
+            for (int boxLocationColumn = 0; boxLocationColumn < boxColumns; boxLocationColumn++) {
+                // currentBox contains all cells within the box
+                Set<SudokuCell> currentBox = new HashSet<>();
+                // The number of columns of boxes is the number of rows within a box and vice versa
+                for (int row = 0; row < boxColumns; row++) { // This is the row within the box
+                    for (int column = 0; column < boxRows; column++) {
+                        // boxLocationRow * boxColumn is the number of rows in the boxes above this box.
+                        // So the total row of the cell is boxLocationRow * boxColumn + row. The corresponding logic works for columns
+                        currentBox.add(values[boxLocationRow * boxColumns + row][boxLocationColumn * boxRows + column]);
+                    }
+                }
+                result.add(currentBox);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder("-\n");
+        for (SudokuCell[] row : values) {
+            for (SudokuCell value : row) {
+                result.append(value.value == null ? "---" :
+                        value.isInitialValue() ? " " + value.value + " " : "(" + value.value + ")").append(" ");
+            }
+            result.append("\n");
+        }
+        return result.toString();
+    }
 }
