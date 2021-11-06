@@ -1,6 +1,7 @@
 package com.sdenisov.sudoku;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -13,6 +14,7 @@ import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,20 +22,64 @@ import java.util.List;
 
 public class SudokuGridActivity extends AppCompatActivity {
 
-    private static final int boxRows = 3;
-    private static final int boxColumns = 3;
-    private static final int rows = boxRows * boxColumns;
-    // Using a constant allows the backspace button text to be modified easily.
+    // Declares all class variables
+    private int boxRows;
+    private int boxColumns;
+    private int rows;
+    private int difficulty;
+
+    // All constants are declared here for easy modification
     private static final String BACKSPACE_BUTTON_TEXT = "X";
+    private static final String SOLVE_BUTTON_TEXT = "Solve";
+    private static final String SUBMIT_BUTTON_TEXT = "Submit";
+    // Labels used for intent extras. It is important that they are unique within the application and even within
+    // Android - to make sure this is the case, I used the package name (com.sdenisov.sudoku) in the label
+    private static final String INTENT_DIFFICULTY_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.difficulty";
+    private static final String INTENT_BOX_ROWS_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.boxRows";
+    private static final String INTENT_BOX_COLUMNS_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.boxColumns";
 
     private SudokuCellView selectedCell;
-    private final SudokuData sudokuData = new SudokuData(boxRows, boxColumns);
+    private SudokuData sudokuData;
     private final List<SudokuCellView> cells = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sudoku_grid);
+        Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
+        difficulty = intent.getIntExtra(INTENT_DIFFICULTY_LABEL, 1); // Is zero or less for solver (I'll use -1)
+        boxRows = intent.getIntExtra(INTENT_BOX_ROWS_LABEL, 3);
+        boxColumns = intent.getIntExtra(INTENT_BOX_COLUMNS_LABEL, 3);
+        rows = boxRows * boxColumns;
+        sudokuData = new SudokuData(boxRows, boxColumns);
+
+        // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
+        Button submitButton = findViewById(R.id.button_submit);
+        if (difficulty > 0) {
+            submitButton.setText(SUBMIT_BUTTON_TEXT);
+            // Button is no longer shown to the user so it is as if it's not there
+            findViewById(R.id.button_clear).setVisibility(View.INVISIBLE);
+        } else {
+            submitButton.setText(SOLVE_BUTTON_TEXT);
+            findViewById(R.id.toggle_notes).setVisibility(View.INVISIBLE);
+        }
+
+        BottomNavigationView navigation = findViewById(R.id.navigation);
+        // For this activity is a solver, makes sure the solver item is selected in the BottomNavigationView
+        if (difficulty <= 0) navigation.setSelectedItemId(R.id.action_solve);
+        navigation.setOnNavigationItemSelectedListener(item -> {
+            Intent intent2 = new Intent(this, SudokuGridActivity.class);
+            if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
+                intent2.putExtra(INTENT_DIFFICULTY_LABEL, 1); // Sets the difficulty (1 for now)
+            } else if (item.getItemId() == R.id.action_solve) {
+                intent2.putExtra(INTENT_DIFFICULTY_LABEL, -1); // Sets a non-positive difficulty to signal this is a solver
+            }
+            startActivity(intent2);
+            // The selected item is not highlighted - it starts a new activity so the highlighting wouldn't be visible
+            // anyway (and would be out of date if the user returns to this activity e.g. by pressing the back button)
+            return false;
+        });
+
         createGrid();
         createDigitButtons();
         /*SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);

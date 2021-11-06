@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_play"
+          android:title="Play"
+    />
+    <item android:id="@+id/action_solve"
+          android:title="Solve" />
+    <item android:id="@+id/action_pdf"
+          android:title="PDF"
+    />
+</menu>
