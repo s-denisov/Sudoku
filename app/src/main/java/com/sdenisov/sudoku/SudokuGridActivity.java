@@ -34,9 +34,7 @@ public class SudokuGridActivity extends AppCompatActivity {
     private static final String SUBMIT_BUTTON_TEXT = "Submit";
     // Labels used for intent extras. It is important that they are unique within the application and even within
     // Android - to make sure this is the case, I used the package name (com.sdenisov.sudoku) in the label
-    private static final String INTENT_DIFFICULTY_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.difficulty";
-    private static final String INTENT_BOX_ROWS_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.boxRows";
-    private static final String INTENT_BOX_COLUMNS_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.boxColumns";
+    private static final String INTENT_IS_GENERATOR_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.isGenerator";
 
     private SudokuCellView selectedCell;
     private SudokuData sudokuData;
@@ -46,12 +44,47 @@ public class SudokuGridActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sudoku_grid);
+
+        // Creates an "options" View based on the dialog_play XML file
+        View options = getLayoutInflater().inflate(R.layout.dialog_play, null);
+        // 9x9 grid size is selected by default
+        ((RadioButton) options.findViewById(R.id.size9)).setChecked(true);
+        // Dialog is shown when the activity is first started by choosing it from the menu. It is shown in both the
+        // generator and solver. To create a grid of a different size, the user can use the BottomNavigationMenu to
+        // start another activity then use the dialog to select the new desired size.
+        new AlertDialog.Builder(this).setTitle("Options")
+                // So that the user has to click "Submit" and can't dismiss the dialog by clicking outside it or
+                // pressing the back button
+                .setCancelable(false)
+                // sets the view for the dialog - this is positioned between the title and the submit button
+                .setView(options)
+                .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not needed
+                    RadioGroup size = options.findViewById(R.id.option_size);
+
+                    // Checks which radio box was selected by checking its id
+                    if (size.getCheckedRadioButtonId() == R.id.size6) {
+                        // A 6x6 grid has 3 rows of boxes and 2 columns of boxes
+                        boxRows = 3;
+                        boxColumns = 2;
+                    } else if (size.getCheckedRadioButtonId() == R.id.size9) {
+                        boxRows = 3;
+                        boxColumns = 3;
+                    } else {
+                        boxRows = 4;
+                        boxColumns = 3;
+                    }
+
+                    // It is important that these lines use the correct boxRows and boxColumns values, so these lines
+                    // are placed after boxRows and boxColumns have been set up
+                    rows = boxRows * boxColumns;
+                    sudokuData = new SudokuData(boxRows, boxColumns);
+                    createGrid();
+                    createDigitButtons();
+                }).show();
+
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
-        difficulty = intent.getIntExtra(INTENT_DIFFICULTY_LABEL, 1); // Is zero or less for solver (I'll use -1)
-        boxRows = intent.getIntExtra(INTENT_BOX_ROWS_LABEL, 3);
-        boxColumns = intent.getIntExtra(INTENT_BOX_COLUMNS_LABEL, 3);
-        rows = boxRows * boxColumns;
-        sudokuData = new SudokuData(boxRows, boxColumns);
+        // difficulty s zero or less for solver (I'll use -1)
+        difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
 
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
         Button submitButton = findViewById(R.id.button_submit);
@@ -70,9 +103,10 @@ public class SudokuGridActivity extends AppCompatActivity {
         navigation.setOnNavigationItemSelectedListener(item -> {
             Intent intent2 = new Intent(this, SudokuGridActivity.class);
             if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
-                intent2.putExtra(INTENT_DIFFICULTY_LABEL, 1); // Sets the difficulty (1 for now)
+                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, true); // So that a generator is created
             } else if (item.getItemId() == R.id.action_solve) {
-                intent2.putExtra(INTENT_DIFFICULTY_LABEL, -1); // Sets a non-positive difficulty to signal this is a solver
+                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, false); // So that a solver is created
+                // a solver
             }
             startActivity(intent2);
             // The selected item is not highlighted - it starts a new activity so the highlighting wouldn't be visible
@@ -80,8 +114,6 @@ public class SudokuGridActivity extends AppCompatActivity {
             return false;
         });
 
-        createGrid();
-        createDigitButtons();
         /*SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
         cell.setValue(8);
         cell.setInitialValue(true);
