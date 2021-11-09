@@ -30,8 +30,6 @@ public class SudokuGridActivity extends AppCompatActivity {
 
     // All constants are declared here for easy modification
     private static final String BACKSPACE_BUTTON_TEXT = "X";
-    private static final String SOLVE_BUTTON_TEXT = "Solve";
-    private static final String SUBMIT_BUTTON_TEXT = "Submit";
     // Labels used for intent extras. It is important that they are unique within the application and even within
     // Android - to make sure this is the case, I used the package name (com.sdenisov.sudoku) in the label
     private static final String INTENT_IS_GENERATOR_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.isGenerator";
@@ -90,11 +88,11 @@ public class SudokuGridActivity extends AppCompatActivity {
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
         Button submitButton = findViewById(R.id.button_submit);
         if (difficulty > 0) {
-            submitButton.setText(SUBMIT_BUTTON_TEXT);
+            submitButton.setText(getText(R.string.submit));
             // Button is no longer shown to the user so it is as if it's not there
             findViewById(R.id.button_clear).setVisibility(View.INVISIBLE);
         } else {
-            submitButton.setText(SOLVE_BUTTON_TEXT);
+            submitButton.setText(getText(R.string.solve));
             findViewById(R.id.toggle_notes).setVisibility(View.INVISIBLE);
         }
 

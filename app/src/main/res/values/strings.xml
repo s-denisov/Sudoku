@@ -3,4 +3,5 @@
     <string name="button_home">home</string>
     <string name="solve">Solve</string>
     <string name="unsolve">Unsolve</string>
+    <string name="submit">Submit</string>
 </resources>
