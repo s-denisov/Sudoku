@@ -80,6 +80,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                     sudokuData = new SudokuData(boxRows, boxColumns);
                     createGrid();
                     createDigitButtons();
+                    if (rows >= 9 && difficulty > 0) fillInWorldsHardestSudoku();
                 }).show();
 
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
@@ -113,71 +114,6 @@ public class SudokuGridActivity extends AppCompatActivity {
             // anyway (and would be out of date if the user returns to this activity e.g. by pressing the back button)
             return false;
         });
-
-        /*SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
-        cell.setValue(8);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(1, 2);
-        cell.setValue(3);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(1, 3);
-        cell.setValue(6);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(2, 1);
-        cell.setValue(7);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(2, 4);
-        cell.setValue(9);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(2, 6);
-        cell.setValue(2);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(3, 1);
-        cell.setValue(5);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(3, 5);
-        cell.setValue(7);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(4, 4);
-        cell.setValue(4);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(4, 5);
-        cell.setValue(5);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(4, 6);
-        cell.setValue(7);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(5, 3);
-        cell.setValue(1);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(5, 7);
-        cell.setValue(3);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(6, 2);
-        cell.setValue(1);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(6, 7);
-        cell.setValue(6);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(6, 8);
-        cell.setValue(8);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(7, 2);
-        cell.setValue(8);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(7, 2+1);
-        cell.setValue(5);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(7, 7);
-        cell.setValue(1);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(8, 1);
-        cell.setValue(9);
-        cell.setInitialValue(true);
-        cell = sudokuData.getValue(8, 6);
-        cell.setValue(4);
-        cell.setInitialValue(true);
-        updateGrid();*/
     }
 
     private void createGrid() {
@@ -268,6 +204,14 @@ public class SudokuGridActivity extends AppCompatActivity {
     private void setCellValue(View view) {
         if (selectedCell != null) {
             SudokuData.SudokuCell cellData = sudokuData.getValue(selectedCell.row, selectedCell.column);
+            if (((Button) findViewById(R.id.button_submit)).getText().equals("Unsolve") ||
+                    difficulty > 0 && cellData.isInitialValue()) {
+                // Stops execution here to prevent the value in the selected cell from being modified.
+                // In the solver, this happens if the grid is filled in (due to the solve button being clicked), so the
+                //   user will have to click "Unsolve" to modify any values
+                // In the generator, this happens for initial values
+                return;
+            }
             Button digit = (Button) view;
             ToggleButton noteMode = findViewById(R.id.toggle_notes);
             if (noteMode.isChecked()) { // If note mode is on
@@ -290,14 +234,17 @@ public class SudokuGridActivity extends AppCompatActivity {
                 if (digit.getText() == BACKSPACE_BUTTON_TEXT) {
                     selectedCell.setText("");
                     cellData.setValue(null);
-                    cellData.setInitialValue(false); // This cell is empty so is now allowed to be modified by the solver
+                    // This cell is empty so is now allowed to be modified so is no longer initial
+                    cellData.setInitialValue(false);
                 } else {
                     selectedCell.setText(digit.getText());
                     // Note that the value of the button's text can be converted to an integer, as the only button
                     // where this is not allowed is the backspace button, and we know that this isn't the backspace
                     // button.
                     cellData.setValue(Integer.parseInt(String.valueOf(digit.getText())));
-                    cellData.setInitialValue(true); // To make sure the value is dark and isn't modified by the solver
+                    // This is a value entered by the player, so is initial for the solver and not initial for the
+                    // generator
+                    cellData.setInitialValue(difficulty <= 0);
                 }
                 // Removes all notes as notes cannot coexist with a value
                 Arrays.fill(cellData.notes, false);
@@ -318,6 +265,7 @@ public class SudokuGridActivity extends AppCompatActivity {
 
     private void selectCell(View cell) {
         // Removes border around old selected cell
+        SudokuCellView sudokuCellView = (SudokuCellView) cell;
         if (selectedCell != null) selectedCell.setBackgroundColor(Color.WHITE);
         if (cell == selectedCell) {
             // Clicking a cell already selected unselects it (note that the previous line also runs in this case,
@@ -332,7 +280,7 @@ public class SudokuGridActivity extends AppCompatActivity {
         // The border color is the app's primary color, so that it fits thematically with the rest of the app
         border.setStroke(5, ContextCompat.getColor(this, R.color.design_default_color_primary)); // border
         cell.setBackground(border);
-        selectedCell = (SudokuCellView) cell;
+        selectedCell = sudokuCellView;
     }
 
     // Updates the grid, so that it displays all up-to-date information from SudokuData
@@ -414,5 +362,72 @@ public class SudokuGridActivity extends AppCompatActivity {
             button.setText(R.string.solve);
         }
         updateGrid(); // Updates grid based on new sudokuData object
+    }
+
+    public void fillInWorldsHardestSudoku() {
+        SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(1, 2);
+        cell.setValue(3);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(1, 3);
+        cell.setValue(6);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 1);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 4);
+        cell.setValue(9);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(2, 6);
+        cell.setValue(2);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(3, 1);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(3, 5);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 4);
+        cell.setValue(4);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 5);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(4, 6);
+        cell.setValue(7);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(5, 3);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(5, 7);
+        cell.setValue(3);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 2);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 7);
+        cell.setValue(6);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(6, 8);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 2);
+        cell.setValue(8);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 2 + 1);
+        cell.setValue(5);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(7, 7);
+        cell.setValue(1);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(8, 1);
+        cell.setValue(9);
+        cell.setInitialValue(true);
+        cell = sudokuData.getValue(8, 6);
+        cell.setValue(4);
+        cell.setInitialValue(true);
+        updateGrid();
     }
 }
