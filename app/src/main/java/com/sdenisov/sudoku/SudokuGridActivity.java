@@ -43,10 +43,20 @@ public class SudokuGridActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sudoku_grid);
 
+        Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
+        // difficulty is zero or less for solver (I'll use -1)
+        difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
+
         // Creates an "options" View based on the dialog_play XML file
-        View options = getLayoutInflater().inflate(R.layout.dialog_play, null);
+        View options = getLayoutInflater().inflate(R.layout.dialog_options, null);
         // 9x9 grid size is selected by default
         ((RadioButton) options.findViewById(R.id.size9)).setChecked(true);
+        // Easy difficulty is selected by default (if this is a solver, this simply wouldn't be visible)
+        ((RadioButton) options.findViewById(R.id.difficulty_easy)).setChecked(true);
+
+        // The option for setting the difficulty in the solver is removed by hiding the view
+        if (difficulty <= 0) options.findViewById(R.id.option_difficulty).setVisibility(View.GONE);
+
         // Dialog is shown when the activity is first started by choosing it from the menu. It is shown in both the
         // generator and solver. To create a grid of a different size, the user can use the BottomNavigationMenu to
         // start another activity then use the dialog to select the new desired size.
@@ -72,6 +82,20 @@ public class SudokuGridActivity extends AppCompatActivity {
                         boxColumns = 3;
                     }
 
+                    if (difficulty > 0) { // This only runs for the sudoku generator
+                        RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
+                        // Checks which radio button was selected and sets the difficulty to the corresponding value:
+                        if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
+                            difficulty = 1;
+                        } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_medium) {
+                            difficulty = 2;
+                        } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_hard) {
+                            difficulty = 3;
+                        } else {
+                            difficulty = 4;
+                        }
+                    }
+
                     // It is important that these lines use the correct boxRows and boxColumns values, so these lines
                     // are placed after boxRows and boxColumns have been set up
                     rows = boxRows * boxColumns;
@@ -80,10 +104,6 @@ public class SudokuGridActivity extends AppCompatActivity {
                     createDigitButtons();
                     if (rows >= 9 && difficulty > 0) fillInWorldsHardestSudoku();
                 }).show();
-
-        Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
-        // difficulty s zero or less for solver (I'll use -1)
-        difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
 
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
         Button submitButton = findViewById(R.id.button_submit);

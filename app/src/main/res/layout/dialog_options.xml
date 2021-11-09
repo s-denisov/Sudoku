@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+                                                   android:layout_width="match_parent" android:paddingLeft="20dp"
+                                                   android:layout_height="match_parent">
+    <RadioGroup android:id="@+id/option_size"
+            android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
+        <RadioButton android:id="@+id/size6" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                     android:text="6x6"/>
+        <RadioButton android:id="@+id/size9" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                     android:text="9x9"/>
+        <RadioButton android:id="@+id/size12" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                     android:text="12x12"/>
+    </RadioGroup>
+
+    <RadioGroup android:id="@+id/option_difficulty"
+                android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
+        <RadioButton android:id="@+id/difficulty_easy" android:layout_width="wrap_content"
+                     android:layout_height="wrap_content" android:text="Easy"/>
+        <RadioButton android:id="@+id/difficulty_medium" android:layout_width="wrap_content"
+                     android:layout_height="wrap_content" android:text="Medium"/>
+        <RadioButton android:id="@+id/difficulty_hard" android:layout_width="wrap_content"
+                     android:layout_height="wrap_content" android:text="Hard"/>
+        <RadioButton android:id="@+id/difficulty_unlimited" android:layout_width="wrap_content"
+                     android:layout_height="wrap_content" android:text="Unlimited"/>
+    </RadioGroup>
+</LinearLayout>
