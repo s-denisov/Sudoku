@@ -364,6 +364,24 @@ public class SudokuGridActivity extends AppCompatActivity {
         updateGrid(); // Updates grid based on new sudokuData object
     }
 
+    // Clears all cells. Can only run in the solver (not in the generator)
+    public void clear(View view) {
+        for (int row = 0; row < sudokuData.getRows(); row++) {
+            for (int column = 0; column < sudokuData.getRows(); column++) {
+                SudokuData.SudokuCell cell = sudokuData.getValue(row, column);
+                // Empties each cell by setting its value to null
+                cell.setValue(null);
+                // This cell is empty so is now allowed to be modified so is no longer initial
+                cell.setInitialValue(false);
+                // Removes all notes from the cell (as notes are added by the solver to aid finding the solution)
+                Arrays.fill(cell.notes, false);
+            }
+        }
+        updateGrid();
+        // Sets the submit button's text to "solve", as "unsolve" is only used for a filled grid.
+        ((Button) findViewById(R.id.button_submit)).setText(getText(R.string.solve));
+    }
+
     public void fillInWorldsHardestSudoku() {
         SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
         cell.setValue(8);
