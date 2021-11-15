@@ -2,10 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/action_play"
           android:title="Play"
+          android:icon="@drawable/baseline_create_24"
     />
     <item android:id="@+id/action_solve"
-          android:title="Solve" />
+          android:title="Solve"
+          android:icon="@drawable/baseline_question_mark_24"
+    />
     <item android:id="@+id/action_pdf"
           android:title="PDF"
+          android:icon="@drawable/baseline_file_download_24"
     />
 </menu>
