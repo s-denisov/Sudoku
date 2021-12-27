@@ -1,37 +1,54 @@
 package com.sdenisov.sudoku;
 
-import android.util.Log;
-
 import java.util.*;
 
 public class SudokuSolver {
-    // Works by modifying sudokuData object so doesn't need to return a value.
+    // Works by modifying sudokuData object so doesn't need to return a new SudokuData object.
     // Need to use separate procedures for solve and solveWithRecursion as the former updates all notes while the
     // latter doesn't. This is because solve is called only once so updating all notes takes an acceptable amount of
     // time, while solveWithRecursion is called multiple times, so it doesn't take an acceptable amount of time.
+    // Returns the difficulty: 1 (easy), 2 (medium), 3 (hard) or 4 (unlimited), with -1 if no solutions
     public static int solve(SudokuData sudokuData, int noteSelectionMethod) {
         // If noteSelectionMethod is positive, notes are selected in increasing order.
         // If negative then in decreasing order.
         // If zero then in random order.
         updateNotes(sudokuData, -1);
         int[] guesses = solveWithRecursion(sudokuData, noteSelectionMethod);
-        Log.d("project", Arrays.toString(guesses));
-        if (guesses == null) return -1;
-        if (Math.min(guesses[2], guesses[3]) > 0) return 4;
+        if (guesses == null) return -1; // No solutions
+        if (Math.min(guesses[2], guesses[3]) > 0) {
+            // Looking at very many sudokus, all of them had guesses[2] = guesses[3] = 0, even the world's hardest
+            // sudoku. Guessing from 3 or more notes gives many combinations, so if guesses[2] > 0 or guesses[3] > 0
+            // then this if statement runs and the sudoku is likely very hard so "unlimited" difficulty is returned
+            return 4;
+        }
         if (guesses[1] == 0) {
-            if (guesses[0] < 2) return 1;
+            // Then all guesses were from 1 note, which means the sudoku can be solved using only two simple
+            // techniques - single candidate ("guessing" from 1 note) and single position. As a result, it has a fairly
+            // low difficulty and is thus rated as easy or medium.
+            if (guesses[0] < 2) {
+                // Single candidate is generally harder to use than single position, as single candidate can require
+                // a large number of cells to be checked. As a result, if single candidate is used less, then the
+                // sudoku is given the lower difficulty of 1, while if single candidate is used more, then the sudoku
+                // is given the higher difficulty of 2.
+                return 1;
+            }
             return 2;
         }
+        // guesses[1] > 0 and guesses[2] = guesses[3] = 0 then we use guesses[1] to determine the difficulty, as the
+        // guesses from guesses[0] are simple so have little impact on the difficulty. A lower value for guesses[1]
+        // suggests the difficulty is lower so 3 is returned if it is below a certain value. Otherwise, 4 is returned.
         if (guesses[1] < 3) return 3;
         return 4;
     }
 
-    // Both solve and solveWithRecursion return true if the sudoku has been solved successfully and false otherwise.
+    // Returns an array showing the number of times that the solver guessed from a certain number of notes:
+    // [1, 2, 3, 4 or more]. Null is returned if the sudoku has no solutions. This is used later to rate the difficulty
+    // of the sudoku - sudokus where guesses are needed from a large number of notes are likely harder.
     private static int[] solveWithRecursion(SudokuData sudokuData, int noteSelectionMethod) {
         Tuple2<Set<SudokuData.SudokuCell>, Boolean> simplificationResult = simplifySinglePosition(sudokuData);
         Set<SudokuData.SudokuCell> cellsChanged = simplificationResult.getFirst();
         // If filling in all cells is impossible then the method fails by removing all values from changed cells then
-        // returning false.
+        // returning null.
         if (!simplificationResult.getSecond()) {
             removeAllCellValues(sudokuData, cellsChanged);
             return null;
@@ -56,13 +73,16 @@ public class SudokuSolver {
         }
         if (leastNotesCell == null) {
             // Then there are no empty cells. If there were errors then the algorithm would've stopped before reaching
-            // this point - so there are no errors so the solver has been successful and true is returned
+            // this point - so there are no errors so the solver has been successful.
+            // An array filled with 0s is returned because no guesses were made at this step. This array will be modified
+            // by the previous recursive callers, adding to the array so that the array eventually shows the number of
+            // guesses for the whole solver.
             return new int[]{0, 0, 0, 0};
         }
         if (notesToInt((leastNotesCell)).size() == 0) {
             removeAllCellValues(sudokuData, cellsChanged);
             // Then there is at least one cell with no value and no notes. So it has no possible values so there is
-            // no possible solution with the inputted values so false is returned.
+            // no possible solution with the inputted values so null is returned.
             return null;
         }
         List<Integer> intNotes = notesToInt(leastNotesCell);
@@ -84,17 +104,20 @@ public class SudokuSolver {
                     leastNotesCell.column);
             updateCellNotesForAddingCellValue(sudokuData, intNotes.get(i), leastNotesCell.row, leastNotesCell.column);
 
-            // Calls itself recursively. If the call has been successful then it returns true, so the previous
-            // recursive caller also returns true until true is returned by solve() to the original caller.
+            // Calls itself recursively. If the call has been successful then it returns a non-null array, so the previous
+            // recursive caller also returns non-null until non-null is returned by solve() to the original caller.
             int[] difficultyOfOtherCells = solveWithRecursion(sudokuData, noteSelectionMethod);
             if (difficultyOfOtherCells != null) {
-                difficultyOfOtherCells[Math.min(3, intNotes.size() - 1)] += 1;
+                difficultyOfOtherCells[Math.min(3, intNotes.size() - 1)]++;
+                // Incremented so that difficultyOfOtherCells includes the current guess - e.g. if the current guess
+                // was from 2 notes then index 1 is incremented. If the current guess is from more than 3 notes then
+                // index 2 is still incremented, as if the guess was from 3 notes.
                 return difficultyOfOtherCells;
             }
         }
         cellsChanged.add(leastNotesCell); // This is done so that the value is removed from both
         removeAllCellValues(sudokuData, cellsChanged);
-        return null; // All values have been tried for the cell and none are successful so false is returned
+        return null; // All values have been tried for the cell and none are successful so null is returned
     }
 
     // updateNotes updates notes in all cells.
