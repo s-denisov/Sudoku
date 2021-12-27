@@ -1,5 +1,7 @@
 package com.sdenisov.sudoku;
 
+import android.util.Log;
+
 import java.util.*;
 
 public class SudokuSolver {
@@ -7,20 +9,32 @@ public class SudokuSolver {
     // Need to use separate procedures for solve and solveWithRecursion as the former updates all notes while the
     // latter doesn't. This is because solve is called only once so updating all notes takes an acceptable amount of
     // time, while solveWithRecursion is called multiple times, so it doesn't take an acceptable amount of time.
-    public static boolean solve(SudokuData sudokuData) {
+    public static int solve(SudokuData sudokuData, int noteSelectionMethod) {
+        // If noteSelectionMethod is positive, notes are selected in increasing order.
+        // If negative then in decreasing order.
+        // If zero then in random order.
         updateNotes(sudokuData, -1);
-        return solveWithRecursion(sudokuData);
+        int[] guesses = solveWithRecursion(sudokuData, noteSelectionMethod);
+        Log.d("project", Arrays.toString(guesses));
+        if (guesses == null) return -1;
+        if (Math.min(guesses[2], guesses[3]) > 0) return 4;
+        if (guesses[1] == 0) {
+            if (guesses[0] < 2) return 1;
+            return 2;
+        }
+        if (guesses[1] < 3) return 3;
+        return 4;
     }
 
     // Both solve and solveWithRecursion return true if the sudoku has been solved successfully and false otherwise.
-    private static boolean solveWithRecursion(SudokuData sudokuData) {
+    private static int[] solveWithRecursion(SudokuData sudokuData, int noteSelectionMethod) {
         Tuple2<Set<SudokuData.SudokuCell>, Boolean> simplificationResult = simplifySinglePosition(sudokuData);
         Set<SudokuData.SudokuCell> cellsChanged = simplificationResult.getFirst();
         // If filling in all cells is impossible then the method fails by removing all values from changed cells then
         // returning false.
         if (!simplificationResult.getSecond()) {
             removeAllCellValues(sudokuData, cellsChanged);
-            return false;
+            return null;
         }
 
         // The cell with the least notes. Starting from this cell is likely to result in better performance - e.g. if it
@@ -43,15 +57,24 @@ public class SudokuSolver {
         if (leastNotesCell == null) {
             // Then there are no empty cells. If there were errors then the algorithm would've stopped before reaching
             // this point - so there are no errors so the solver has been successful and true is returned
-            return true;
+            return new int[]{0, 0, 0, 0};
         }
         if (notesToInt((leastNotesCell)).size() == 0) {
             removeAllCellValues(sudokuData, cellsChanged);
             // Then there is at least one cell with no value and no notes. So it has no possible values so there is
             // no possible solution with the inputted values so false is returned.
-            return false;
+            return null;
         }
         List<Integer> intNotes = notesToInt(leastNotesCell);
+        // The algorithm will go through intNotes in order. intNotes are currently ascending, so if noteSelectionMethod
+        // is positive then they don't need to be modified.
+        // If noteSelectionMethod is zero then intNotes are shuffled.
+        // If noteSelectionMethod is negative then intNotes are reversed so that they are in descending order
+        if (noteSelectionMethod == 0) {
+            Collections.shuffle(intNotes);
+        } else if (noteSelectionMethod < 0) {
+            Collections.reverse(intNotes);
+        }
         // Iterates through the value of each note in leastNotesCell
         for (int i = 0; i < intNotes.size(); i++) {
             leastNotesCell.setValue(intNotes.get(i));
@@ -63,11 +86,15 @@ public class SudokuSolver {
 
             // Calls itself recursively. If the call has been successful then it returns true, so the previous
             // recursive caller also returns true until true is returned by solve() to the original caller.
-            if (solveWithRecursion(sudokuData)) return true;
+            int[] difficultyOfOtherCells = solveWithRecursion(sudokuData, noteSelectionMethod);
+            if (difficultyOfOtherCells != null) {
+                difficultyOfOtherCells[Math.min(3, intNotes.size() - 1)] += 1;
+                return difficultyOfOtherCells;
+            }
         }
         cellsChanged.add(leastNotesCell); // This is done so that the value is removed from both
         removeAllCellValues(sudokuData, cellsChanged);
-        return false; // All values have been tried for the cell and none are successful so false is returned
+        return null; // All values have been tried for the cell and none are successful so false is returned
     }
 
     // updateNotes updates notes in all cells.

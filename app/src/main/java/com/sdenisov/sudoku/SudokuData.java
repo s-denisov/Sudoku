@@ -54,6 +54,19 @@ public class SudokuData {
         public int getColor() {
             return initialValue ? Color.BLACK : Color.GRAY;
         }
+
+        // Creates a copy of this SudokuCell object, so that the copy can be modified without modifying this object.
+        // This method is used within the copy() method of the SudokuData class
+        public SudokuCell copy() {
+            SudokuCell result = new SudokuCell(value);
+            // Copies each of the attributes
+            result.row = row;
+            result.column = column;
+            result.initialValue = initialValue;
+            // Notes are copied using System.arraycopy
+            System.arraycopy(notes, 0, result.notes, 0, notes.length);
+            return result;
+        }
     }
 
     public SudokuData(int boxRows, int boxColumns) {
@@ -245,6 +258,20 @@ public class SudokuData {
         return result;
     }
 
+    public boolean allValuesEqual(SudokuData otherSudoku) {
+        if (boxRows != otherSudoku.boxRows || boxColumns != otherSudoku.boxColumns) {
+            return false;
+        }
+        for (int row = 0; row < getRows(); row++) {
+            for (int column = 0; column < getRows(); column++) {
+                if (!Objects.equals(values[row][column].getValue(), otherSudoku.values[row][column].getValue())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("-\n");
@@ -256,5 +283,18 @@ public class SudokuData {
             result.append("\n");
         }
         return result.toString();
+    }
+
+    // Creates a copy of this SudokuData object, so that the copy can be modified without modifying this object
+    public SudokuData copy() {
+        // boxRows and boxColumns are copied by passing them to the constructor
+        SudokuData result = new SudokuData(boxRows, boxColumns);
+        // Cells are copied by iterating through each row and column then copying the cell
+        for (int row = 0; row < getRows(); row++) {
+            for (int column = 0; column < getRows(); column++) {
+                result.values[row][column] = values[row][column].copy();
+            }
+        }
+        return result;
     }
 }

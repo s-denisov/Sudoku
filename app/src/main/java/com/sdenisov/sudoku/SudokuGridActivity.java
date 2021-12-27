@@ -102,7 +102,14 @@ public class SudokuGridActivity extends AppCompatActivity {
                     sudokuData = new SudokuData(boxRows, boxColumns);
                     createGrid();
                     createDigitButtons();
-                    if (rows >= 9 && difficulty > 0) fillInWorldsHardestSudoku();
+                    fillInWorldsHardestSudoku();
+                    updateGrid();
+                    if (difficulty > 0) {
+                        // If this is a generator, then the lines below are run so that a sudoku is generated as soon
+                        // as the user opens the activity
+                        sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
+                        updateGrid();
+                    }
                 }).show();
 
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
@@ -360,11 +367,12 @@ public class SudokuGridActivity extends AppCompatActivity {
         // A string resource is used for "Solve" and "Unsolve" text, so that the text can be modified easily
         if (button.getText().equals(getText(R.string.solve))) {
             long before = System.nanoTime();
-            boolean solutionExits = SudokuSolver.solve(sudokuData); // Modifies sudokuData object to solve sudoku
+            int difficulty = SudokuSolver.solve(sudokuData, 1); // Modifies sudokuData object to solve sudoku
             // The time taken by the solver is found by recording the system time before and after and finding the
             // difference. It is also divided by a billion to convert from nanoseconds to seconds.
             Log.d("project", String.valueOf((double) (System.nanoTime() - before) / 1_000_000_000));
-            if (solutionExits) {
+            Log.d("project", String.valueOf(difficulty));
+            if (difficulty != -1) {
                 // If a solution exists then the button is set to "Unsolve" to allow the user to easily remove all
                 // the filled values
                 button.setText(R.string.unsolve);
