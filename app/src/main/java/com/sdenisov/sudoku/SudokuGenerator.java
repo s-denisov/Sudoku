@@ -55,12 +55,16 @@ public class SudokuGenerator {
                 // the sudoku is invalid. It suggests that there are too few initial cells, as there are too many
                 // options for filling the grid, so removeValue is set to false
                 removeValue = false;
-            } else {
-                // If the else clause is reached then there is exactly one solution, so this is a valid sudoku, so it
-                // is returned
+            } else if (difficulty == requiredDifficulty) {
+                // If the else clause is reached then there is exactly one solution, so this is a valid sudoku
+                // so if the difficulty is correct then it is returned
                 // Removes all non-initial values, so that the player will have to fill them in themselves
                 SudokuSolver.unsolve(sudoku);
                 return sudoku;
+            } else {
+                // Having fewer clues usually makes a sudoku more difficult so removeValue is set to true if the
+                // difficulty is too low and false if it is too high
+                removeValue = difficulty < requiredDifficulty;
             }
         }
     }
