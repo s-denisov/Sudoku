@@ -37,7 +37,7 @@ public class SudokuSolver {
         // guesses[1] > 0 and guesses[2] = guesses[3] = 0 then we use guesses[1] to determine the difficulty, as the
         // guesses from guesses[0] are simple so have little impact on the difficulty. A lower value for guesses[1]
         // suggests the difficulty is lower so 3 is returned if it is below a certain value. Otherwise, 4 is returned.
-        if (guesses[1] < 3) return 3;
+        if (guesses[1] < 2) return 3;
         return 4;
     }
 
