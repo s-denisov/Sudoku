@@ -1,5 +1,8 @@
 package com.sdenisov.sudoku;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SudokuGenerator {
     public static SudokuData generate(int requiredDifficulty, int boxRows, int boxColumns) {
         SudokuData sudoku = new SudokuData(boxRows, boxColumns);
@@ -17,27 +20,52 @@ public class SudokuGenerator {
         SudokuSolver.solve(sudoku, 0);
         SudokuData filled = sudoku.copy(); // So that the filled grid is saved, even if sudoku is modified
         boolean removeValue = true; // If true, cells are removed, if false then cells are added
+
+        // cellsWithValues and cellsWithoutValues contain indexes of cells
+        List<Integer> cellsWithValues = new ArrayList<>();
+        for (int i = 0; i < sudoku.getRows() * sudoku.getRows(); i++) {
+            // Initially, all cells have values so all indexes are added to cellsWithValues
+            cellsWithValues.add(i);
+        }
+        // Initially there are no cells without values, so this list is initially empty
+        List<Integer> cellsWithoutValues = new ArrayList<>();
+
         while (true) {
             // This while loop is used to add or remove a random cell, based on the value of removeValue
-            while (true) {
-                int row = randomInt(1, sudoku.getRows()); // Row selected randomly
-                int column = randomInt(1, sudoku.getRows()); // Column selected randomly
-                SudokuData.SudokuCell cell = sudoku.getValue(row, column);
-                if (removeValue) {
-                    if (cell.getValue() != null) {
-                        cell.setValue(null);
-                        // Initial value is set to true for filled cells, so that they can be modified by the solver
-                        cell.setInitialValue(false);
-                        break;
-                    }
-                } else if (cell.getValue() == null) { // If removeValue is false and the cell is currently empty
-                    // ... then it is filled with the value in the corresponding cell of the filled grid
-                    cell.setValue(filled.getValue(row, column).getValue());
-                    // As stated earlier, initial value is set to true for filled cells,
-                    // so that they are not modified by the solver
-                    cell.setInitialValue(true);
-                    break;
-                }
+            if (removeValue) {
+                // Randomly chooses the index of what item to select from cellsWithValues
+                int indexOfCellIndex = randomInt(0, cellsWithValues.size() - 1);
+                int cellIndex = cellsWithValues.get(indexOfCellIndex);
+                // The value is removed from this cell, so it is now without a value, so it is removed from the
+                // cellsWithValues list but added to cellsWithoutValues
+                cellsWithValues.remove(indexOfCellIndex); // removes item whose index is indexOfCellIndex (its value is
+                                                                                                          // cellIndex)
+                cellsWithoutValues.add(cellIndex);
+                // Gets the cell with that index from `sudoku`, where the indexes start at 0 and go from left to right
+                // then top to bottom
+                SudokuData.SudokuCell cell = sudoku.getValue(cellIndex / sudoku.getRows(),
+                        cellIndex % sudoku.getRows());
+                // The value is removed by setting it to null
+                cell.setValue(null);
+                // initialValue is set to false for empty cells so that they can be modified by the solver
+                cell.setInitialValue(false);
+            } else {
+                // Randomly chooses the index of what item to select from cellsWithoutValues
+                int indexOfCellIndex = randomInt(0, cellsWithoutValues.size() - 1);
+                int cellIndex = cellsWithoutValues.get(indexOfCellIndex);
+                // The cell is filled with its value from the filled grid, so it is now with a value,
+                // so it is removed from the cellsWithoutValues list and added to the cellsWithValues list.
+                cellsWithoutValues.remove(indexOfCellIndex);
+                cellsWithValues.add(cellIndex);
+                // Gets the cell with that index from `sudoku`, where the indexes start at 0 and go from left to right
+                // then top to bottom
+                SudokuData.SudokuCell cell = sudoku.getValue(cellIndex / sudoku.getRows(),
+                        cellIndex % sudoku.getRows());
+                // The cell is set to the value in the corresponding cell from the filled grid
+                cell.setValue(filled.getValue(cellIndex / sudoku.getRows(),
+                        cellIndex % sudoku.getRows()).getValue());
+                // initialValue is set to true for filled cells so that they cannot be modified by the solver
+                cell.setInitialValue(true);
             }
             long timeStarted = System.currentTimeMillis();
             int difficulty = SudokuSolver.solve(sudoku, 1);
@@ -66,6 +94,9 @@ public class SudokuGenerator {
                 // difficulty is too low and false if it is too high
                 removeValue = difficulty < requiredDifficulty;
             }
+            // Removes all non-initial values, so that the next iteration of the while loop starts with a partially
+            // empty sudoku, just like this iteration started
+            SudokuSolver.unsolve(sudoku);
         }
     }
 
