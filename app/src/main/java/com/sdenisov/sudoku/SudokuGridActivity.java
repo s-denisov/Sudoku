@@ -102,17 +102,21 @@ public class SudokuGridActivity extends AppCompatActivity {
                     sudokuData = new SudokuData(boxRows, boxColumns);
                     createGrid();
                     createDigitButtons();
-                    fillInWorldsHardestSudoku();
                     updateGrid();
+
+                    ProgressBar generatorProgress = findViewById(R.id.generator_progress);
                     if (difficulty > 0) {
-                        dialog.dismiss();
+                        generatorProgress.setVisibility(View.VISIBLE);
+                        dialog.dismiss(); // Closes the dialog so that the progress bar is shown
                         // If this is a generator, then the lines below are run so that a sudoku is generated as soon
                         // as the user opens the activity
-                        findViewById(R.id.generator_progress).setVisibility(View.VISIBLE);
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                         updateGrid();
-                        findViewById(R.id.generator_progress).setVisibility(View.GONE);
+                        // Once the sudoku generation finishes, the progress bar is hidden
                     }
+                    // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
+                    // generator has been generated (i.e. after the above if statement has finished)
+                    generatorProgress.setVisibility(View.GONE);
                 }).show();
 
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
