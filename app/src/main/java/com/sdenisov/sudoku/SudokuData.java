@@ -258,18 +258,24 @@ public class SudokuData {
         return result;
     }
 
-    public boolean allValuesEqual(SudokuData otherSudoku) {
+    // Returns a list of indexes whose values are different
+    public List<Integer> findDifferingIndexes(SudokuData otherSudoku) {
         if (boxRows != otherSudoku.boxRows || boxColumns != otherSudoku.boxColumns) {
-            return false;
+            // Returns null rather than an empty list so that it can be distinguished from the case where all values are
+            // equal
+            return null;
         }
+        List<Integer> result = new ArrayList<>();
         for (int row = 0; row < getRows(); row++) {
             for (int column = 0; column < getRows(); column++) {
                 if (!Objects.equals(values[row][column].getValue(), otherSudoku.values[row][column].getValue())) {
-                    return false;
+                    // If the two values are not equal then converts the row-column combination to the index of the cell
+                    // and adds to the list
+                    result.add(row * getRows() + column);
                 }
             }
         }
-        return true;
+        return result;
     }
 
     @Override

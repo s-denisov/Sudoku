@@ -41,6 +41,13 @@ public class SudokuGridActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        for (int difficulty = 1; difficulty <= 4; difficulty++) {
+            long initialTime = System.currentTimeMillis();
+            for (int i = 0; i < 10; i++) {
+                SudokuGenerator.generate(difficulty, 4, 3);
+            }
+            Log.d("project", String.valueOf((double) (System.currentTimeMillis() - initialTime) / 10_000));
+        }
         setContentView(R.layout.activity_sudoku_grid);
 
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
@@ -112,7 +119,6 @@ public class SudokuGridActivity extends AppCompatActivity {
                         // as the user opens the activity
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                         updateGrid();
-                        // Once the sudoku generation finishes, the progress bar is hidden
                     }
                     // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
                     // generator has been generated (i.e. after the above if statement has finished)
