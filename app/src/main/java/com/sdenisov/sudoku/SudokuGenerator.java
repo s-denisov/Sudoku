@@ -74,36 +74,47 @@ public class SudokuGenerator {
                     // initialValue is set to true for filled cells so that they cannot be modified by the solver
                     cell.setInitialValue(true);
                 }
-                long timeStarted = System.currentTimeMillis();
-                int difficulty = SudokuSolver.solve(sudoku, 1);
-                SudokuData solution = sudoku.copy();
-                SudokuSolver.unsolve(sudoku);
-                // Notes are selected in the opposite order from the previous solver, so that if there are two different
-                // solutions then both are discovered
-                SudokuSolver.solve(sudoku, -1);
-                if (difficulty == -1) {
-                    // If there are no solutions then it suggests that there are too many initial cells, as there are too few
-                    // options for filling the grid, so removeValue is set to true
-                    removeValue = true;
-                } else if (!solution.allValuesEqual(sudoku)) {
-                    // If any of the cells are different in the two solutions, then the two solutions are different so
-                    // the sudoku is invalid. It suggests that there are too few initial cells, as there are too many
-                    // options for filling the grid, so removeValue is set to false
-                    removeValue = false;
-                } else if (difficulty == requiredDifficulty) {
-                    // If the else clause is reached then there is exactly one solution, so this is a valid sudoku
-                    // so if the difficulty is correct then it is returned
-                    // Removes all non-initial values, so that the player will have to fill them in themselves
+                // At first, there is a large number of iterations when only the previous code is ran, and as
+                // removeValue is true and is not changed, this means that values keep getting removed until 65% are
+                // removed, so in a 9x9 sudoku there are 28 left.
+                if (iterations > sudoku.getRows() * sudoku.getRows() * 0.65) {
+                    long timeStarted = System.currentTimeMillis();
+                    int difficulty = SudokuSolver.solve(sudoku, 1);
+                    SudokuData solution = sudoku.copy();
                     SudokuSolver.unsolve(sudoku);
-                    return sudoku;
-                } else {
-                    // Having fewer clues usually makes a sudoku more difficult so removeValue is set to true if the
-                    // difficulty is too low and false if it is too high
-                    removeValue = difficulty < requiredDifficulty;
+                    // Notes are selected in the opposite order from the previous solver, so that if there are two different
+                    // solutions then both are discovered
+                    SudokuSolver.solve(sudoku, -1);
+                    // Values are removed initially, but this ensures the number of values does not get too high again
+                    // due to values being added again - that at most half the cells are filled. This prevents sudokus
+                    // from becoming too easy, which is particularly important for an "Easy" requested difficulty (as
+                    // then the sudoku could theoretically have only one empty cell, which is ridiculously easy).
+                    if (cellsWithValues.size() > sudoku.getRows() * sudoku.getRows() / 2 || difficulty == -1) {
+                        // To prevent sudokus from becoming too easy, the number of clues must be at most half the number
+                        // of cells - if it is higher, then clues need to be removed so removeValue is set to true.
+                        // If there are no solutions then it suggests that there are too many initial cells, as there are too few
+                        // options for filling the grid, so removeValue is set to true
+                        removeValue = true;
+                    } else if (!solution.allValuesEqual(sudoku)) {
+                        // If any of the cells are different in the two solutions, then the two solutions are different so
+                        // the sudoku is invalid. It suggests that there are too few initial cells, as there are too many
+                        // options for filling the grid, so removeValue is set to false
+                        removeValue = false;
+                    } else if (difficulty == requiredDifficulty) {
+                        // If the else clause is reached then there is exactly one solution, so this is a valid sudoku
+                        // so if the difficulty is correct then it is returned
+                        // Removes all non-initial values, so that the player will have to fill them in themselves
+                        SudokuSolver.unsolve(sudoku);
+                        return sudoku;
+                    } else {
+                        // Having fewer clues usually makes a sudoku more difficult so removeValue is set to true if the
+                        // difficulty is too low and false if it is too high
+                        removeValue = difficulty < requiredDifficulty;
+                    }
+                    // Removes all non-initial values, so that the next iteration of the while loop starts with a partially
+                    // empty sudoku, just like this iteration started
+                    SudokuSolver.unsolve(sudoku);
                 }
-                // Removes all non-initial values, so that the next iteration of the while loop starts with a partially
-                // empty sudoku, just like this iteration started
-                SudokuSolver.unsolve(sudoku);
             }
         }
     }
