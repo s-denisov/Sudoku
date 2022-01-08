@@ -105,10 +105,13 @@ public class SudokuGridActivity extends AppCompatActivity {
                     fillInWorldsHardestSudoku();
                     updateGrid();
                     if (difficulty > 0) {
+                        dialog.dismiss();
                         // If this is a generator, then the lines below are run so that a sudoku is generated as soon
                         // as the user opens the activity
+                        findViewById(R.id.generator_progress).setVisibility(View.VISIBLE);
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                         updateGrid();
+                        findViewById(R.id.generator_progress).setVisibility(View.GONE);
                     }
                 }).show();
 
