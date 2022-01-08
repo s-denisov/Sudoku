@@ -32,7 +32,8 @@ public class SudokuGenerator {
             }
             // Initially there are no cells without values, so this list is initially empty
             List<Integer> cellsWithoutValues = new ArrayList<>();
-
+            List<Integer> cellsToAdd = null;
+            
             while (true) {
                 iterations++;
                 // If there's a large number of iterations then this sudoku has been worked on for a while so the
@@ -57,12 +58,13 @@ public class SudokuGenerator {
                     // initialValue is set to false for empty cells so that they can be modified by the solver
                     cell.setInitialValue(false);
                 } else {
+                    List<Integer> possibleAdditions = cellsToAdd == null ? cellsWithoutValues : cellsToAdd;
                     // Randomly chooses the index of what item to select from cellsWithoutValues
-                    int indexOfCellIndex = randomInt(0, cellsWithoutValues.size() - 1);
-                    int cellIndex = cellsWithoutValues.get(indexOfCellIndex);
+                    int indexOfCellIndex = randomInt(0, possibleAdditions.size() - 1);
+                    int cellIndex = possibleAdditions.get(indexOfCellIndex);
                     // The cell is filled with its value from the filled grid, so it is now with a value,
-                    // so it is removed from the cellsWithoutValues list and added to the cellsWithValues list.
-                    cellsWithoutValues.remove(indexOfCellIndex);
+                    // so it is removed from the possibleAdditions list and added to the cellsWithValues list.
+                    possibleAdditions.remove(indexOfCellIndex);
                     cellsWithValues.add(cellIndex);
                     // Gets the cell with that index from `sudoku`, where the indexes start at 0 and go from left to right
                     // then top to bottom
@@ -73,11 +75,13 @@ public class SudokuGenerator {
                             cellIndex % sudoku.getRows()).getValue());
                     // initialValue is set to true for filled cells so that they cannot be modified by the solver
                     cell.setInitialValue(true);
+                    cellsToAdd = null;
                 }
                 // At first, there is a large number of iterations when only the previous code is ran, and as
                 // removeValue is true and is not changed, this means that values keep getting removed until 65% are
                 // removed, so in a 9x9 sudoku there are 28 left.
                 if (iterations > sudoku.getRows() * sudoku.getRows() * 0.65) {
+//                    Log.d("project", String.valueOf(iterations));
                     long timeStarted = System.currentTimeMillis();
                     int difficulty = SudokuSolver.solve(sudoku, 1);
                     SudokuData solution = sudoku.copy();
@@ -95,11 +99,14 @@ public class SudokuGenerator {
                         // If there are no solutions then it suggests that there are too many initial cells, as there are too few
                         // options for filling the grid, so removeValue is set to true
                         removeValue = true;
-                    } else if (!solution.allValuesEqual(sudoku)) {
+//                        Log.d("project", "too large " + difficulty);
+                    } else if (solution.allValuesEqual(sudoku).size() != 0) {
                         // If any of the cells are different in the two solutions, then the two solutions are different so
                         // the sudoku is invalid. It suggests that there are too few initial cells, as there are too many
                         // options for filling the grid, so removeValue is set to false
                         removeValue = false;
+                        cellsToAdd = solution.allValuesEqual(sudoku);
+//                        Log.d("project", "multiple solutions");
                     } else if (difficulty == requiredDifficulty) {
                         // If the else clause is reached then there is exactly one solution, so this is a valid sudoku
                         // so if the difficulty is correct then it is returned
@@ -109,6 +116,7 @@ public class SudokuGenerator {
                     } else {
                         // Having fewer clues usually makes a sudoku more difficult so removeValue is set to true if the
                         // difficulty is too low and false if it is too high
+//                        Log.d("project", "wrong difficulty: " + difficulty);
                         removeValue = difficulty < requiredDifficulty;
                     }
                     // Removes all non-initial values, so that the next iteration of the while loop starts with a partially

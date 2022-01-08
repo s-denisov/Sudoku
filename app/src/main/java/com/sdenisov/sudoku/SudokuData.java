@@ -258,18 +258,19 @@ public class SudokuData {
         return result;
     }
 
-    public boolean allValuesEqual(SudokuData otherSudoku) {
+    public List<Integer> allValuesEqual(SudokuData otherSudoku) {
         if (boxRows != otherSudoku.boxRows || boxColumns != otherSudoku.boxColumns) {
-            return false;
+            return null;
         }
+        List<Integer> result = new ArrayList<>();
         for (int row = 0; row < getRows(); row++) {
             for (int column = 0; column < getRows(); column++) {
                 if (!Objects.equals(values[row][column].getValue(), otherSudoku.values[row][column].getValue())) {
-                    return false;
+                    result.add(row * getRows() + column);
                 }
             }
         }
-        return true;
+        return result;
     }
 
     @Override
