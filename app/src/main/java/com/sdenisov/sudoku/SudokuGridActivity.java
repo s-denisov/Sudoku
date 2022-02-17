@@ -41,13 +41,21 @@ public class SudokuGridActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        for (int difficulty = 1; difficulty <= 4; difficulty++) {
-            long initialTime = System.currentTimeMillis();
-            for (int i = 0; i < 10; i++) {
-                SudokuGenerator.generate(difficulty, 4, 3);
-            }
-            Log.d("project", String.valueOf((double) (System.currentTimeMillis() - initialTime) / 10_000));
-        }
+        newGame();
+    }
+
+    private void newGame() {
+        // Resets all the variables to make sure the game is truly restarted
+        selectedCell = null;
+        sudokuData = null;
+        cells.clear();
+//        for (int difficulty = 1; difficulty <= 4; difficulty++) {
+//            long initialTime = System.currentTimeMillis();
+//            for (int i = 0; i < 10; i++) {
+//                SudokuGenerator.generate(difficulty, 2, 3);
+//            }
+//            Log.d("project", String.valueOf((double) (System.currentTimeMillis() - initialTime) / 10_000));
+//        }
         setContentView(R.layout.activity_sudoku_grid);
 
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
@@ -140,14 +148,20 @@ public class SudokuGridActivity extends AppCompatActivity {
         // For this activity is a solver, makes sure the solver item is selected in the BottomNavigationView
         if (difficulty <= 0) navigation.setSelectedItemId(R.id.action_solve);
         navigation.setOnNavigationItemSelectedListener(item -> {
-            Intent intent2 = new Intent(this, SudokuGridActivity.class);
-            if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
-                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, true); // So that a generator is created
-            } else if (item.getItemId() == R.id.action_solve) {
-                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, false); // So that a solver is created
-                // a solver
+            if (item.getItemId() == R.id.action_pdf) {
+                // If the pdf option is chosen then a PdfGeneratorActivity is created ...
+                Intent intent2 = new Intent(this, PdfGeneratorActivity.class);
+                startActivity(intent2);
+            } else {
+                // ... otherwise a SudokuGridActivity is created
+                Intent intent2 = new Intent(this, SudokuGridActivity.class);
+                if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
+                    intent2.putExtra(INTENT_IS_GENERATOR_LABEL, true); // So that a generator is created
+                } else if (item.getItemId() == R.id.action_solve) {
+                    intent2.putExtra(INTENT_IS_GENERATOR_LABEL, false); // So that a solver is created
+                }
+                startActivity(intent2);
             }
-            startActivity(intent2);
             // The selected item is not highlighted - it starts a new activity so the highlighting wouldn't be visible
             // anyway (and would be out of date if the user returns to this activity e.g. by pressing the back button)
             return false;
@@ -378,7 +392,21 @@ public class SudokuGridActivity extends AppCompatActivity {
     public void solveSudoku(View view) {
         Button button = (Button) view;
         // A string resource is used for "Solve" and "Unsolve" text, so that the text can be modified easily
-        if (button.getText().equals(getText(R.string.solve))) {
+        if (button.getText().equals(getText(R.string.submit))) {
+            if (sudokuData.findErrors().size() != 0) {
+                new AlertDialog.Builder(this).setTitle("Invalid")
+                        .setMessage("Your sudoku contains an error").show();
+            } else if (sudokuData.containsEmptyCells()) {
+                new AlertDialog.Builder(this).setTitle("Invalid")
+                        .setMessage("You haven't finished the sudoku").show();
+            } else {
+                new AlertDialog.Builder(this).setTitle("Congratulations")
+                        .setMessage("You have successfully solved the sudoku")
+                        .setPositiveButton("New game", (dialog, id) -> newGame())
+                        .setNegativeButton("Continue", (dialog, id) -> {})
+                        .show();
+            }
+        } else if (button.getText().equals(getText(R.string.solve))) {
             long before = System.nanoTime();
             int difficulty = SudokuSolver.solve(sudokuData, 1); // Modifies sudokuData object to solve sudoku
             // The time taken by the solver is found by recording the system time before and after and finding the

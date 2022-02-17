@@ -278,6 +278,17 @@ public class SudokuData {
         return result;
     }
 
+    public boolean containsEmptyCells() {
+        for (int row = 0; row < getRows(); row++) {
+            for (int column = 0; column < getRows(); column++) {
+                if (values[row][column].getValue() == null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("-\n");
