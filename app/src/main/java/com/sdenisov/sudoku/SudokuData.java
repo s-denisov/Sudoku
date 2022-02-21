@@ -98,6 +98,14 @@ public class SudokuData {
         return values.length;
     }
 
+    public int getBoxRows() {
+        return boxRows;
+    }
+
+    public int getBoxColumns() {
+        return boxColumns;
+    }
+
     // Returns an array of indexes - if there are duplicates, then it contains the indexes of the two duplicates.
     // If there are no duplicates then it is an empty array.
     private int[] checkDuplicates(SudokuCell[] items) {

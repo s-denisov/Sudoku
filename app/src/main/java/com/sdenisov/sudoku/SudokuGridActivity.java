@@ -127,6 +127,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                         // as the user opens the activity
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                         updateGrid();
+                        SudokuSaver.saveSudoku(sudokuData, true);
                     }
                     // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
                     // generator has been generated (i.e. after the above if statement has finished)
