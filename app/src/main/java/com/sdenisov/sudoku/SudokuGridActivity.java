@@ -127,6 +127,8 @@ public class SudokuGridActivity extends AppCompatActivity {
                         // as the user opens the activity
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                         updateGrid();
+                        // The sudoku is saved after it is generated so that it is loaded again if the user reopens
+                        // the app
                         SudokuSaver.saveSudoku(sudokuData, true);
                     }
                     // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
@@ -314,6 +316,8 @@ public class SudokuGridActivity extends AppCompatActivity {
                 cell.setTextColor(sudokuData.getValue(cell.row, cell.column).getColor());
             }
         }
+        // Saves the sudoku so that any changes made by the user are automatically saved
+        SudokuSaver.saveSudoku(sudokuData, difficulty > 0);
     }
 
     private void selectCell(View cell) {

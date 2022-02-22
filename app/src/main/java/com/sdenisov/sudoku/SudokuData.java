@@ -55,6 +55,13 @@ public class SudokuData {
             return initialValue ? Color.BLACK : Color.GRAY;
         }
 
+        public boolean hasNotes() {
+            for (boolean note : notes) {
+                if (note) return true; // If note is true for any element of notes then has a note so return true ...
+            }
+            return false; // ... otherwise returns false
+        }
+
         // Creates a copy of this SudokuCell object, so that the copy can be modified without modifying this object.
         // This method is used within the copy() method of the SudokuData class
         public SudokuCell copy() {
@@ -295,6 +302,16 @@ public class SudokuData {
             }
         }
         return false;
+    }
+
+    // Removes all notes from all cells
+    public void clearNotes() {
+        for (int row = 0; row < getRows(); row++) {
+            for (int column = 0; column < getRows(); column++) {
+                // Sets all values of the notes array for this cell to false.
+                Arrays.fill(values[row][column].notes, false);
+            }
+        }
     }
 
     @Override

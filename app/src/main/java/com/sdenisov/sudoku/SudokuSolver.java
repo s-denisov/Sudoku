@@ -14,6 +14,7 @@ public class SudokuSolver {
         // If zero then in random order.
         updateNotes(sudokuData, -1);
         int[] guesses = solveWithRecursion(sudokuData, noteSelectionMethod);
+        sudokuData.clearNotes(); // Removes any notes that were added to help work out the solution
         if (guesses == null) return -1; // No solutions
         if (Math.min(guesses[2], guesses[3]) > 0) {
             // Looking at very many sudokus, all of them had guesses[2] = guesses[3] = 0, even the world's hardest
