@@ -101,6 +101,11 @@ public class SudokuData {
         return values[row][column];
     }
 
+    // Gets the current value based on a single index (going from left to right then top to bottom)
+    public SudokuCell getValue(int index) {
+        return getValue(index / getRows(), index % getRows());
+    }
+
     public int getRows() {
         return values.length;
     }

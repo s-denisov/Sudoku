@@ -126,6 +126,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                         // If this is a generator, then the lines below are run so that a sudoku is generated as soon
                         // as the user opens the activity
                         sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
+//                        loadSudoku();
                         updateGrid();
                         // The sudoku is saved after it is generated so that it is loaded again if the user reopens
                         // the app
@@ -277,7 +278,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                     // Note that the index is valueChosen - 1 as an index of 0 corresponds to note number 1.
                     cellData.notes[valueChosen - 1] = !cellData.notes[valueChosen - 1];
                     cellData.setValue(null); // Removes the value as notes cannot coexist with a value
-                    updateCellNotes(selectedCell, cellData.notes); // Displays the changes to the user
+                    updateCellNotes(selectedCell, cellData.notes, false); // Displays the changes to the user
                 }
             } else {
                 // Sets text autoscaling - if autoscaling has been removed by updateCellNotes then this undoes that
@@ -371,10 +372,18 @@ public class SudokuGridActivity extends AppCompatActivity {
         }
     }
 
-    private void updateCellNotes(SudokuCellView cell, boolean[] notes) {
-        // Disables text resizing because the notes need to have the same size in all cells, but resizing could
-        // result in different sizes.
-        TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
+    private void updateCellNotes(SudokuCellView cell, boolean[] notes, boolean loadingSudoku) {
+        // loadingSudoku is true if this is notes from initially loading the sudoku and is false if these are notes
+        // that the user is adding right now
+        if (!loadingSudoku) {
+            // This line removes the text auto sizing that was set by another line
+            // When adding notes after generating a sudoku, this line is required for notes to be displayed correctly
+            // so is run. When adding notes after loading a sudoku, notes are still displayed correctly with this line
+            // so there's no harm running it.
+            // When loading a sudoku, this line results in notes not being displayed (for some reason) but if this line
+            // is not run then notes are displayed correctly, so it is not run.
+            TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
+        }
         // Through trial and error, I found that dividing by boxRows + 1 gives the best results
         // As each cell has the same width, this value should be the same for each cell
         cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
@@ -391,7 +400,9 @@ public class SudokuGridActivity extends AppCompatActivity {
                             // added then a space is added instead.
                             i % (i < 10 ? boxRows : boxRows / 2) == 0 ? "\n" : " ");
         }
+        Log.d("project", result.toString());
         cell.setText(result);
+        cell.setTextColor(Color.GRAY);
     }
 
     public void solveSudoku(View view) {
@@ -452,6 +463,18 @@ public class SudokuGridActivity extends AppCompatActivity {
         updateGrid();
         // Sets the submit button's text to "solve", as "unsolve" is only used for a filled grid.
         ((Button) findViewById(R.id.button_submit)).setText(getText(R.string.solve));
+    }
+
+    private void loadSudoku() {
+        sudokuData = SudokuSaver.loadSudoku(true); // Gets the sudokuData using loadSudoku
+        for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
+            // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
+            if (sudokuData.getValue(i).hasNotes()) {
+                // Shows the notes to the user
+                updateCellNotes(cells.get(i), sudokuData.getValue(i).notes, true);
+            }
+        }
+        updateGrid(); // Updates the grid
     }
 
     public void fillInWorldsHardestSudoku() {
