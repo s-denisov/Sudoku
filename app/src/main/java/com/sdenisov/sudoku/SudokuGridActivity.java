@@ -11,6 +11,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,6 +36,7 @@ public class SudokuGridActivity extends AppCompatActivity {
     // Labels used for intent extras. It is important that they are unique within the application and even within
     // Android - to make sure this is the case, I used the package name (com.sdenisov.sudoku) in the label
     private static final String INTENT_IS_GENERATOR_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.isGenerator";
+
 
     private SudokuCellView selectedCell;
     private SudokuData sudokuData;
@@ -139,6 +141,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                             } else {
                                 difficulty = 4;
                             }
+                            difficultyOptions.check(R.id.difficulty_unlimited);
                         }
 
                         // It is important that these lines use the correct boxRows and boxColumns values, so these lines
@@ -158,10 +161,10 @@ public class SudokuGridActivity extends AppCompatActivity {
                             dialog.dismiss(); // Closes the dialog so that the progress bar is shown
                             sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                             updateGrid();
-                            // The sudoku is saved after it is generated so that it is loaded again if the user reopens
-                            // the app
-                            sudokuSaver.saveSudoku(sudokuData);
                         }
+                        // The sudoku is saved after it is generated so that it is loaded again if the user reopens
+                        // the app (this is for both the generator or solver)
+                        sudokuSaver.saveSudoku(sudokuData);
                         // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
                         // generator has been generated (i.e. after the above if statement has finished)
                         generatorProgress.setVisibility(View.GONE);
@@ -499,9 +502,20 @@ public class SudokuGridActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu, menu);
+    public boolean onCreateOptionsMenu(Menu menu) { // Is called automatically when the activity is started
+        getMenuInflater().inflate(R.menu.menu, menu); // Loads the res/menu/menu.xml file
         return super.onCreateOptionsMenu(menu);
+    }
+
+    // Automatically called when one of the items from the menu is selected
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Currently the only item but adding code to check id in case I choose to add more items in the future
+        if (item.getItemId() == R.id.new_sudoku) {
+            sudokuSaver.removeSudoku(); // Removes saved data about current sudoku
+            newGame(); // Starts a new game, showing a dialogue to the user
+        }
+        return true;
     }
 
     public void fillInWorldsHardestSudoku() {

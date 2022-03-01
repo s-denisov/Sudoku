@@ -2,7 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-            android:id="@+id/action_save"
-            android:title="Save"/>
+            android:id="@+id/new_sudoku"
+            android:title="New sudoku"/>
 
 </menu>
+
