@@ -1,6 +1,7 @@
 package com.sdenisov.sudoku;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -9,7 +10,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -38,6 +38,7 @@ public class SudokuGridActivity extends AppCompatActivity {
     private SudokuCellView selectedCell;
     private SudokuData sudokuData;
     private final List<SudokuCellView> cells = new ArrayList<>();
+    private SudokuSaver sudokuSaver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +63,9 @@ public class SudokuGridActivity extends AppCompatActivity {
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
         // difficulty is zero or less for solver (I'll use -1)
         difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
+
+        // The sudokuSaver is instantiated as soon as we know whether this grid is a generator or solver
+        sudokuSaver = new SudokuSaver(getPreferences(Context.MODE_PRIVATE), difficulty > 0);
 
         // Creates an "options" View based on the dialog_play XML file
         View options = getLayoutInflater().inflate(R.layout.dialog_options, null);
@@ -121,17 +125,22 @@ public class SudokuGridActivity extends AppCompatActivity {
                     updateGrid();
 
                     ProgressBar generatorProgress = findViewById(R.id.generator_progress);
+                    // If this is a generator, then the lines below are run so that a sudoku is generated as soon
+                    // as the user opens the activity
                     if (difficulty > 0) {
+                        // Shows progress bar to the user so that they can see the sudoku is being loaded and the app
+                        // didn't just freeze
                         generatorProgress.setVisibility(View.VISIBLE);
                         dialog.dismiss(); // Closes the dialog so that the progress bar is shown
-                        // If this is a generator, then the lines below are run so that a sudoku is generated as soon
-                        // as the user opens the activity
-                        sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
-//                        loadSudoku();
-                        updateGrid();
+                        if (!loadSudoku()) { // loadSudoku returns true if it successfully loaded a sudoku and populated
+                                             // the grid. Otherwise, it returns false so the code below is run to
+                                             // generate a new sudoku and update the grid to display it
+                            sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
+                            updateGrid();
+                        }
                         // The sudoku is saved after it is generated so that it is loaded again if the user reopens
                         // the app
-                        SudokuSaver.saveSudoku(sudokuData, true);
+                        sudokuSaver.saveSudoku(sudokuData);
                     }
                     // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
                     // generator has been generated (i.e. after the above if statement has finished)
@@ -319,7 +328,7 @@ public class SudokuGridActivity extends AppCompatActivity {
             }
         }
         // Saves the sudoku so that any changes made by the user are automatically saved
-        SudokuSaver.saveSudoku(sudokuData, difficulty > 0);
+        sudokuSaver.saveSudoku(sudokuData);
     }
 
     private void selectCell(View cell) {
@@ -466,8 +475,10 @@ public class SudokuGridActivity extends AppCompatActivity {
         ((Button) findViewById(R.id.button_submit)).setText(getText(R.string.solve));
     }
 
-    private void loadSudoku() {
-        sudokuData = SudokuSaver.loadSudoku(true); // Gets the sudokuData using loadSudoku
+    // Attempts to load the sudokuData from the SudokuSaver. Returns true if successful and false if not.
+    private boolean loadSudoku() {
+        sudokuData = sudokuSaver.loadSudoku(); // Gets the sudokuData using loadSudoku
+        if (sudokuData == null) return false;
         for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
             // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
             if (sudokuData.getValue(i).hasNotes()) {
@@ -476,13 +487,14 @@ public class SudokuGridActivity extends AppCompatActivity {
             }
         }
         updateGrid(); // Updates the grid
+        return true;
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        getMenuInflater().inflate(R.menu.menu, menu);
+//        return super.onCreateOptionsMenu(menu);
+//    }
 
     public void fillInWorldsHardestSudoku() {
         SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);

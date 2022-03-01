@@ -1,6 +1,6 @@
 package com.sdenisov.sudoku;
 
-import android.util.Log;
+import android.content.SharedPreferences;
 
 public class SudokuSaver {
 
@@ -8,15 +8,28 @@ public class SudokuSaver {
     // Private because they do not need to be accessed by other classes as other classes interact with sudokus
     // directly using saveSudoku and loadSudoku without having to worry about the sudoku string representation
     // (thus providing a form of encapsulation)
+    private static final String GENERATOR_SUDOKU_STRING_KEY = "com.sdenisov.sudoku.SudokuSaver.sudokuString.generator";
+    private static final String SOLVER_SUDOKU_STRING_KEY = "com.sdenisov.sudoku.SudokuSaver.sudokuString.solver";
     private static final char INITIAL_VALUE_MARKER = ':';
     private static final char NON_INITIAL_VALUE_MARKER = '!';
     private static final char NOTE_PRESENT = '+';
     private static final char NOTE_ABSENT = '-';
 
+    // SharedPreferences and isGenerator are the same for the same SudokuGridActivity and each SudokuSaver belongs to a
+    // single SudokuGridActivity so sharedPref and isGenerator are passed to the constructor (instead of having to pass
+    // them to saveSudoku and loadSudoku each time).
+    private final SharedPreferences sharedPref;
+    private final boolean isGenerator;
+
+    public SudokuSaver(SharedPreferences sharedPref, boolean isGenerator) {
+        this.sharedPref = sharedPref;
+        this.isGenerator = isGenerator;
+    }
+
     // Saves a sudoku using SharedPreferences so that data isn't lost even if the device is turned off.
     // isGenerator is passed so that sudokus used by the Generator and the Solver are saved separately, allowing the
     // user to use the generator and solve a sudoku at the same time.
-    public static void saveSudoku(SudokuData sudokuData, boolean isGenerator) {
+    public void saveSudoku(SudokuData sudokuData) {
         StringBuilder sudokuString = new StringBuilder();
         // Adds initial data about boxRows and boxColumns, with newlines (so that can be parsed easily by converting
         // the string to a list, with each line being an element)
@@ -41,13 +54,24 @@ public class SudokuSaver {
                 }
             }
         }
-        Log.d("project", sudokuString.toString());
+
+        // Uses the sharedPref editor to save the sudokuString using the appropriate key (a separate key is used for
+        // the generator and solver, so both a generator and solver can be saved at the same time but only one sudoku
+        // of each type can be saved at the same time)
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(isGenerator ? GENERATOR_SUDOKU_STRING_KEY : SOLVER_SUDOKU_STRING_KEY, sudokuString.toString());
+        editor.apply();
     }
 
     // Loads the sudoku from SharedPreferences and returns it, allowing the last used sudoku to be recovered
     // (both for the solver and generator)
-    public static SudokuData loadSudoku(boolean isGenerator) {
-        String sudokuString = "3\n3\n:4!-+-+-----!1:8:9!:2!:5!:9:3:6:1!!!:4:8!!!:5!!!!!!:5!!!:9:4!:2:1:6!!:3:8!!!!!:5!!:1!!!:5:7!!:9:4!!:1!:8!!:5:3!!:9!!:1:6:8!!:2";
+    public SudokuData loadSudoku() {
+        // Retrieves the sudokuString from SharedPreferences based on isGenerator
+        // Returns null if there is no such string, allowing the caller to take the appropriate action
+        // (this means a new sudoku will be generated instead of loading the previous one).
+        String sudokuString = sharedPref.getString(isGenerator ? GENERATOR_SUDOKU_STRING_KEY : SOLVER_SUDOKU_STRING_KEY,
+                null);
+        if (sudokuString == null) return null;
         // Splits the string into an array of its lines - the first line is boxRows, the next boxColumns and
         // the next has information about the cells
         String[] stringLines = sudokuString.split("\n");
