@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.Menu;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -77,76 +78,95 @@ public class SudokuGridActivity extends AppCompatActivity {
         // The option for setting the difficulty in the solver is removed by hiding the view
         if (difficulty <= 0) options.findViewById(R.id.option_difficulty).setVisibility(View.GONE);
 
-        // Dialog is shown when the activity is first started by choosing it from the menu. It is shown in both the
-        // generator and solver. To create a grid of a different size, the user can use the BottomNavigationMenu to
-        // start another activity then use the dialog to select the new desired size.
-        new AlertDialog.Builder(this).setTitle("Options")
-                // So that the user has to click "Submit" and can't dismiss the dialog by clicking outside it or
-                // pressing the back button
-                .setCancelable(false)
-                // sets the view for the dialog - this is positioned between the title and the submit button
-                .setView(options)
-                .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not needed
-                    RadioGroup size = options.findViewById(R.id.option_size);
+        ProgressBar generatorProgress = findViewById(R.id.generator_progress);
+        if (sudokuSaver.loadSudoku() != null) { // If a sudoku can be loaded ...
+            sudokuData = sudokuSaver.loadSudoku(); // Loads a sudoku
+            // Sets boxRows, boxColumns and rows attributes of this class (SudokuGridActivity) based on the attributes
+            // of sudokuData
+            boxRows = sudokuData.getBoxRows();
+            boxColumns = sudokuData.getBoxColumns();
+            rows = boxRows * boxColumns;
+            createGrid(); // Creates a grid of the correct size
+            createDigitButtons(); // Creates the digit buttons at the bottom of the grid, including the "X" button
 
-                    // Checks which radio box was selected by checking its id
-                    if (size.getCheckedRadioButtonId() == R.id.size6) {
-                        // A 6x6 grid has 3 rows of boxes and 2 columns of boxes
-                        boxRows = 3;
-                        boxColumns = 2;
-                    } else if (size.getCheckedRadioButtonId() == R.id.size9) {
-                        boxRows = 3;
-                        boxColumns = 3;
-                    } else {
-                        boxRows = 4;
-                        boxColumns = 3;
-                    }
+            for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
+                // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
+                if (sudokuData.getValue(i).hasNotes()) {
+                    // Shows the notes to the user
+                    updateCellNotes(cells.get(i), sudokuData.getValue(i).notes, true);
+                }
+            }
+            updateGrid(); // Updates cells in the grid to show values from sudokuData (rather than just notes)
+            generatorProgress.setVisibility(View.GONE); // The sudoku has now been loaded so the progress bar is removed
+        } // If a sudoku can't be loaded then a dialogue is shown allowing the user to select the size (and the
+        // difficulty if this is a generator). Once submitted, the generator generates and shows a sudoku while the
+        // solver shows a blank grid (of the correct size)
+        else {
+            // Dialog is shown when the activity is first started by choosing it from the menu. It is shown in both the
+            // generator and solver. To create a grid of a different size, the user can use the BottomNavigationMenu to
+            // start another activity then use the dialog to select the new desired size.
+            new AlertDialog.Builder(this).setTitle("Options")
+                    // So that the user has to click "Submit" and can't dismiss the dialog by clicking outside it or
+                    // pressing the back button
+                    .setCancelable(false)
+                    // sets the view for the dialog - this is positioned between the title and the submit button
+                    .setView(options)
+                    .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not needed
+                        RadioGroup size = options.findViewById(R.id.option_size);
 
-                    if (difficulty > 0) { // This only runs for the sudoku generator
-                        RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
-                        // Checks which radio button was selected and sets the difficulty to the corresponding value:
-                        if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
-                            difficulty = 1;
-                        } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_medium) {
-                            difficulty = 2;
-                        } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_hard) {
-                            difficulty = 3;
+                        // Checks which radio box was selected by checking its id
+                        if (size.getCheckedRadioButtonId() == R.id.size6) {
+                            // A 6x6 grid has 3 rows of boxes and 2 columns of boxes
+                            boxRows = 3;
+                            boxColumns = 2;
+                        } else if (size.getCheckedRadioButtonId() == R.id.size9) {
+                            boxRows = 3;
+                            boxColumns = 3;
                         } else {
-                            difficulty = 4;
+                            boxRows = 4;
+                            boxColumns = 3;
                         }
-                    }
 
-                    // It is important that these lines use the correct boxRows and boxColumns values, so these lines
-                    // are placed after boxRows and boxColumns have been set up
-                    rows = boxRows * boxColumns;
-                    sudokuData = new SudokuData(boxRows, boxColumns);
-                    createGrid();
-                    createDigitButtons();
-                    updateGrid();
+                        if (difficulty > 0) { // This only runs for the sudoku generator
+                            RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
+                            // Checks which radio button was selected and sets the difficulty to the corresponding value:
+                            if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
+                                difficulty = 1;
+                            } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_medium) {
+                                difficulty = 2;
+                            } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_hard) {
+                                difficulty = 3;
+                            } else {
+                                difficulty = 4;
+                            }
+                        }
 
-                    ProgressBar generatorProgress = findViewById(R.id.generator_progress);
-                    // If this is a generator, then the lines below are run so that a sudoku is generated as soon
-                    // as the user opens the activity
-                    if (difficulty > 0) {
-                        // Shows progress bar to the user so that they can see the sudoku is being loaded and the app
-                        // didn't just freeze
-                        generatorProgress.setVisibility(View.VISIBLE);
-                        dialog.dismiss(); // Closes the dialog so that the progress bar is shown
-                        if (!loadSudoku()) { // loadSudoku returns true if it successfully loaded a sudoku and populated
-                                             // the grid. Otherwise, it returns false so the code below is run to
-                                             // generate a new sudoku and update the grid to display it
+                        // It is important that these lines use the correct boxRows and boxColumns values, so these lines
+                        // are placed after boxRows and boxColumns have been set up
+                        rows = boxRows * boxColumns;
+                        sudokuData = new SudokuData(boxRows, boxColumns);
+                        createGrid();
+                        createDigitButtons();
+                        updateGrid();
+
+                        // If this is a generator, then the lines below are run so that a sudoku is generated as soon
+                        // as the user opens the activity
+                        if (difficulty > 0) {
+                            // Shows progress bar to the user so that they can see the sudoku is being loaded and the app
+                            // didn't just freeze
+                            generatorProgress.setVisibility(View.VISIBLE);
+                            dialog.dismiss(); // Closes the dialog so that the progress bar is shown
                             sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
                             updateGrid();
+                            // The sudoku is saved after it is generated so that it is loaded again if the user reopens
+                            // the app
+                            sudokuSaver.saveSudoku(sudokuData);
                         }
-                        // The sudoku is saved after it is generated so that it is loaded again if the user reopens
-                        // the app
-                        sudokuSaver.saveSudoku(sudokuData);
-                    }
-                    // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
-                    // generator has been generated (i.e. after the above if statement has finished)
-                    generatorProgress.setVisibility(View.GONE);
-                }).show();
-
+                        // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
+                        // generator has been generated (i.e. after the above if statement has finished)
+                        generatorProgress.setVisibility(View.GONE);
+                    }).show();
+        }
         // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
         Button submitButton = findViewById(R.id.button_submit);
         if (difficulty > 0) {
@@ -473,28 +493,16 @@ public class SudokuGridActivity extends AppCompatActivity {
         updateGrid();
         // Sets the submit button's text to "solve", as "unsolve" is only used for a filled grid.
         ((Button) findViewById(R.id.button_submit)).setText(getText(R.string.solve));
+
+        // Saves the cleared sudoku so that the user can start fresh if they close the app now then open it again.
+        sudokuSaver.saveSudoku(sudokuData);
     }
 
-    // Attempts to load the sudokuData from the SudokuSaver. Returns true if successful and false if not.
-    private boolean loadSudoku() {
-        sudokuData = sudokuSaver.loadSudoku(); // Gets the sudokuData using loadSudoku
-        if (sudokuData == null) return false;
-        for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
-            // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
-            if (sudokuData.getValue(i).hasNotes()) {
-                // Shows the notes to the user
-                updateCellNotes(cells.get(i), sudokuData.getValue(i).notes, true);
-            }
-        }
-        updateGrid(); // Updates the grid
-        return true;
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return super.onCreateOptionsMenu(menu);
     }
-
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        getMenuInflater().inflate(R.menu.menu, menu);
-//        return super.onCreateOptionsMenu(menu);
-//    }
 
     public void fillInWorldsHardestSudoku() {
         SudokuData.SudokuCell cell = sudokuData.getValue(0, 0);
