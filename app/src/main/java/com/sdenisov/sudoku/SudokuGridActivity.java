@@ -3,6 +3,7 @@ package com.sdenisov.sudoku;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -37,11 +38,16 @@ public class SudokuGridActivity extends AppCompatActivity {
     // Android - to make sure this is the case, I used the package name (com.sdenisov.sudoku) in the label
     private static final String INTENT_IS_GENERATOR_LABEL = "com.sdenisov.sudoku.SudokuGridActivity.isGenerator";
 
+    // Constants used for keys in SharedPreferences
+    private static final String DIFFICULTY_KEY = "com.sdenisov.sudoku.SudokuGridActivity.dialogue.difficulty";
+    private static final String GENERATOR_GRID_SIZE_KEY =
+            "com.sdenisov.sudoku.SudokuGridActivity.dialogue.gridSize.generator";
 
     private SudokuCellView selectedCell;
     private SudokuData sudokuData;
     private final List<SudokuCellView> cells = new ArrayList<>();
     private SudokuSaver sudokuSaver;
+    private SharedPreferences sharedPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,28 +60,32 @@ public class SudokuGridActivity extends AppCompatActivity {
         selectedCell = null;
         sudokuData = null;
         cells.clear();
-//        for (int difficulty = 1; difficulty <= 4; difficulty++) {
-//            long initialTime = System.currentTimeMillis();
-//            for (int i = 0; i < 10; i++) {
-//                SudokuGenerator.generate(difficulty, 2, 3);
-//            }
-//            Log.d("project", String.valueOf((double) (System.currentTimeMillis() - initialTime) / 10_000));
-//        }
         setContentView(R.layout.activity_sudoku_grid);
 
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
         // difficulty is zero or less for solver (I'll use -1)
         difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
 
+        // Gets the shared preferences and assigns them to the sharedPref attribute
+        sharedPref = getPreferences(Context.MODE_PRIVATE);
         // The sudokuSaver is instantiated as soon as we know whether this grid is a generator or solver
-        sudokuSaver = new SudokuSaver(getPreferences(Context.MODE_PRIVATE), difficulty > 0);
+        sudokuSaver = new SudokuSaver(sharedPref, difficulty > 0);
 
         // Creates an "options" View based on the dialog_play XML file
         View options = getLayoutInflater().inflate(R.layout.dialog_options, null);
-        // 9x9 grid size is selected by default
-        ((RadioButton) options.findViewById(R.id.size9)).setChecked(true);
-        // Easy difficulty is selected by default (if this is a solver, this simply wouldn't be visible)
-        ((RadioButton) options.findViewById(R.id.difficulty_easy)).setChecked(true);
+
+        // If is a solver (difficulty <= 0) then the grid size selected by default is 9x9.
+        // If it is a generator then if possible it gets the previous grid size from SharedPreferences and sets it as
+        // the default. If not then it sets the default grid size to 9x9.
+        // defaultGridSize is the id of the appropriate RadioButton
+        int defaultGridSize = difficulty > 0
+            ? sharedPref.getInt(GENERATOR_GRID_SIZE_KEY, R.id.size9) : R.id.size9;
+        ((RadioButton) options.findViewById(defaultGridSize)).setChecked(true);
+
+        // Sets the previous difficulty as the default difficulty (if this is a solver, this simply wouldn't be visible)
+        // If not possible sets it to "Easy".
+        int previousDifficulty = sharedPref.getInt(DIFFICULTY_KEY, R.id.difficulty_easy);
+        ((RadioButton) options.findViewById(previousDifficulty)).setChecked(true);
 
         // The option for setting the difficulty in the solver is removed by hiding the view
         if (difficulty <= 0) options.findViewById(R.id.option_difficulty).setVisibility(View.GONE);
@@ -113,7 +123,9 @@ public class SudokuGridActivity extends AppCompatActivity {
                     .setCancelable(false)
                     // sets the view for the dialog - this is positioned between the title and the submit button
                     .setView(options)
-                    .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not needed
+                    .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not used by me
+                        SharedPreferences.Editor editor = sharedPref.edit(); // Gets the editor from sharedPref
+
                         RadioGroup size = options.findViewById(R.id.option_size);
 
                         // Checks which radio box was selected by checking its id
@@ -128,8 +140,10 @@ public class SudokuGridActivity extends AppCompatActivity {
                             boxRows = 4;
                             boxColumns = 3;
                         }
-
                         if (difficulty > 0) { // This only runs for the sudoku generator
+                            // If this is a generator sudoku then saves the selected grid size
+                            editor.putInt(GENERATOR_GRID_SIZE_KEY, size.getCheckedRadioButtonId());
+
                             RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
                             // Checks which radio button was selected and sets the difficulty to the corresponding value:
                             if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
@@ -141,8 +155,11 @@ public class SudokuGridActivity extends AppCompatActivity {
                             } else {
                                 difficulty = 4;
                             }
-                            difficultyOptions.check(R.id.difficulty_unlimited);
+                            // Saves the selected difficulty by saving the id of the selected radiobutton (as ids are
+                            // not changed when the app is restarted, even if the phone is switched off).
+                            editor.putInt(DIFFICULTY_KEY, difficultyOptions.getCheckedRadioButtonId());
                         }
+                        editor.apply(); // Saves the changes to sharedPref
 
                         // It is important that these lines use the correct boxRows and boxColumns values, so these lines
                         // are placed after boxRows and boxColumns have been set up
