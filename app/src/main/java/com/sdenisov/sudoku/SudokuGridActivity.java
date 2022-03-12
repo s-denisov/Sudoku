@@ -52,6 +52,7 @@ public class SudokuGridActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_sudoku_grid);
         newGame();
     }
 
@@ -60,11 +61,13 @@ public class SudokuGridActivity extends AppCompatActivity {
         selectedCell = null;
         sudokuData = null;
         cells.clear();
-        setContentView(R.layout.activity_sudoku_grid);
 
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
         // difficulty is zero or less for solver (I'll use -1)
         difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
+
+        // Note that this can only be called after we find out whether this is a generator or solver
+        setUpButtons();
 
         // Gets the shared preferences and assigns them to the sharedPref attribute
         sharedPref = getPreferences(Context.MODE_PRIVATE);
@@ -118,15 +121,21 @@ public class SudokuGridActivity extends AppCompatActivity {
             // generator and solver. To create a grid of a different size, the user can use the BottomNavigationMenu to
             // start another activity then use the dialog to select the new desired size.
             new AlertDialog.Builder(this).setTitle("Options")
-                    // So that the user has to click "Submit" and can't dismiss the dialog by clicking outside it or
-                    // pressing the back button
-                    .setCancelable(false)
                     // sets the view for the dialog - this is positioned between the title and the submit button
                     .setView(options)
                     .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not used by me
+                        // Resets the layout so that a new grid can be created
+                        ((TableLayout) findViewById(R.id.table_grid)).removeAllViewsInLayout();
+                        ((LinearLayout) findViewById(R.id.layout_digits)).removeAllViewsInLayout();
+                        ((LinearLayout) findViewById(R.id.layout_digits2)).removeAllViewsInLayout();
+
+                        // The layout has been reset so the buttons have to be set up again
+                        setUpButtons();
+
                         SharedPreferences.Editor editor = sharedPref.edit(); // Gets the editor from sharedPref
 
                         RadioGroup size = options.findViewById(R.id.option_size);
+                        generatorProgress.setVisibility(View.VISIBLE);
 
                         // Checks which radio box was selected by checking its id
                         if (size.getCheckedRadioButtonId() == R.id.size6) {
@@ -167,7 +176,6 @@ public class SudokuGridActivity extends AppCompatActivity {
                         sudokuData = new SudokuData(boxRows, boxColumns);
                         createGrid();
                         createDigitButtons();
-                        updateGrid();
 
                         // If this is a generator, then the lines below are run so that a sudoku is generated as soon
                         // as the user opens the activity
@@ -183,19 +191,9 @@ public class SudokuGridActivity extends AppCompatActivity {
                         // the app (this is for both the generator or solver)
                         sudokuSaver.saveSudoku(sudokuData);
                         // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
-                        // generator has been generated (i.e. after the above if statement has finished)
+                        // generator has been generated (i.e. after the above if statement has finished)*/
                         generatorProgress.setVisibility(View.GONE);
                     }).show();
-        }
-        // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
-        Button submitButton = findViewById(R.id.button_submit);
-        if (difficulty > 0) {
-            submitButton.setText(getText(R.string.submit));
-            // Button is no longer shown to the user so it is as if it's not there
-            findViewById(R.id.button_clear).setVisibility(View.INVISIBLE);
-        } else {
-            submitButton.setText(getText(R.string.solve));
-            findViewById(R.id.toggle_notes).setVisibility(View.INVISIBLE);
         }
 
         BottomNavigationView navigation = findViewById(R.id.navigation);
@@ -220,6 +218,19 @@ public class SudokuGridActivity extends AppCompatActivity {
             // anyway (and would be out of date if the user returns to this activity e.g. by pressing the back button)
             return false;
         });
+    }
+
+    // Makes sure only the necessary buttons are displayed: submit and notes for generator, solve and clear for solver
+    private void setUpButtons() {
+        Button submitButton = findViewById(R.id.button_submit);
+        if (difficulty > 0) {
+            submitButton.setText(getText(R.string.submit));
+            // Button is no longer shown to the user so it is as if it's not there
+            findViewById(R.id.button_clear).setVisibility(View.INVISIBLE);
+        } else {
+            submitButton.setText(getText(R.string.solve));
+            findViewById(R.id.toggle_notes).setVisibility(View.INVISIBLE);
+        }
     }
 
     private void createGrid() {
