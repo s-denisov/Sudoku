@@ -120,10 +120,4 @@ public class SudokuSaver {
         return sudokuData;
     }
 
-    // Removes data about the sudoku (for generator or solver as appropriate), allowing the user to start a new sudoku
-    public void removeSudoku() {
-        sharedPref.edit() // Uses the sharedPref editor
-                .remove(isGenerator ? GENERATOR_SUDOKU_STRING_KEY : SOLVER_SUDOKU_STRING_KEY)
-                .apply(); // Applies changes
-    }
 }

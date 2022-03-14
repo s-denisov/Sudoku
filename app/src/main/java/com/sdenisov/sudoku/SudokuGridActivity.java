@@ -53,15 +53,12 @@ public class SudokuGridActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sudoku_grid);
-        newGame();
+        newGame(true);
     }
 
-    private void newGame() {
-        // Resets all the variables to make sure the game is truly restarted
-        selectedCell = null;
-        sudokuData = null;
-        cells.clear();
-
+    // firstGame determines whether this is the first game since the app was opened - used to decide whether to load
+    // a sudoku or generate a new one
+    private void newGame(boolean firstGame) {
         Intent intent = getIntent(); // Gets the intent that started this activity to get extras from the intent
         // difficulty is zero or less for solver (I'll use -1)
         difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
@@ -93,8 +90,9 @@ public class SudokuGridActivity extends AppCompatActivity {
         // The option for setting the difficulty in the solver is removed by hiding the view
         if (difficulty <= 0) options.findViewById(R.id.option_difficulty).setVisibility(View.GONE);
 
-        ProgressBar generatorProgress = findViewById(R.id.generator_progress);
-        if (sudokuSaver.loadSudoku() != null) { // If a sudoku can be loaded ...
+        // A sudoku can only be loaded when the app is opened (i.e. firstGame is true) as at other times, the user has
+        // requested a new sudoku so wouldn't want for their current one to be loaded
+        if (firstGame && sudokuSaver.loadSudoku() != null) { // If a sudoku can be loaded ...
             sudokuData = sudokuSaver.loadSudoku(); // Loads a sudoku
             // Sets boxRows, boxColumns and rows attributes of this class (SudokuGridActivity) based on the attributes
             // of sudokuData
@@ -112,6 +110,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                 }
             }
             updateGrid(); // Updates cells in the grid to show values from sudokuData (rather than just notes)
+            ProgressBar generatorProgress = findViewById(R.id.generator_progress);
             generatorProgress.setVisibility(View.GONE); // The sudoku has now been loaded so the progress bar is removed
         } // If a sudoku can't be loaded then a dialogue is shown allowing the user to select the size (and the
         // difficulty if this is a generator). Once submitted, the generator generates and shows a sudoku while the
@@ -124,10 +123,14 @@ public class SudokuGridActivity extends AppCompatActivity {
                     // sets the view for the dialog - this is positioned between the title and the submit button
                     .setView(options)
                     .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not used by me
+
+                        // Resets all the variables to make sure the game is truly restarted
+                        selectedCell = null;
+                        sudokuData = null;
+                        cells.clear();
+
                         // Resets the layout so that a new grid can be created
-                        ((TableLayout) findViewById(R.id.table_grid)).removeAllViewsInLayout();
-                        ((LinearLayout) findViewById(R.id.layout_digits)).removeAllViewsInLayout();
-                        ((LinearLayout) findViewById(R.id.layout_digits2)).removeAllViewsInLayout();
+                        setContentView(R.layout.activity_sudoku_grid);
 
                         // The layout has been reset so the buttons have to be set up again
                         setUpButtons();
@@ -135,6 +138,8 @@ public class SudokuGridActivity extends AppCompatActivity {
                         SharedPreferences.Editor editor = sharedPref.edit(); // Gets the editor from sharedPref
 
                         RadioGroup size = options.findViewById(R.id.option_size);
+
+                        ProgressBar generatorProgress = findViewById(R.id.generator_progress);
                         generatorProgress.setVisibility(View.VISIBLE);
 
                         // Checks which radio box was selected by checking its id
@@ -145,6 +150,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                         } else if (size.getCheckedRadioButtonId() == R.id.size9) {
                             boxRows = 3;
                             boxColumns = 3;
+
                         } else {
                             boxRows = 4;
                             boxColumns = 3;
@@ -176,6 +182,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                         sudokuData = new SudokuData(boxRows, boxColumns);
                         createGrid();
                         createDigitButtons();
+                        updateGrid();
 
                         // If this is a generator, then the lines below are run so that a sudoku is generated as soon
                         // as the user opens the activity
@@ -184,36 +191,45 @@ public class SudokuGridActivity extends AppCompatActivity {
                             // didn't just freeze
                             generatorProgress.setVisibility(View.VISIBLE);
                             dialog.dismiss(); // Closes the dialog so that the progress bar is shown
-                            sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
-                            updateGrid();
+                            findViewById(R.id.table_grid).post(() -> { // Makes sure the lines below are executed only
+                                     // after all the other lines here (i.e. in the lambda in setPositiveButton).
+                                     // This means that the user will be shown an empty grid with a loading sign while
+                                     // the sudoku is being generated, allowing them to see that their request is being
+                                     // processed
+                                // Generates the sudoku
+                                sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
+                                updateGrid(); // Fills the grid with the generated sudoku
+                                generatorProgress.setVisibility(View.GONE); // Makes the progress bar invisible
+                                // Saves the sudoku so that it is loaded again if the app is restarted
+                                sudokuSaver.saveSudoku(sudokuData);
+                            });
+                        } else {
+                            // The progress bar is hidden in the solver
+                            generatorProgress.setVisibility(View.GONE);
                         }
                         // The sudoku is saved after it is generated so that it is loaded again if the user reopens
                         // the app (this is for both the generator or solver)
                         sudokuSaver.saveSudoku(sudokuData);
-                        // The progress bar is hidden in the solver and is also hidden after the sudoku grid in the
-                        // generator has been generated (i.e. after the above if statement has finished)*/
-                        generatorProgress.setVisibility(View.GONE);
                     }).show();
         }
 
         BottomNavigationView navigation = findViewById(R.id.navigation);
-        // For this activity is a solver, makes sure the solver item is selected in the BottomNavigationView
-        if (difficulty <= 0) navigation.setSelectedItemId(R.id.action_solve);
+
+        if (difficulty <= 0) {
+            // Temporarily removes the onNavigationIteSelectedListener, so that a new activity is not started
+            navigation.setOnNavigationItemSelectedListener(null);
+            // As this activity is a solver, makes sure the solver item is selected in the BottomNavigationView
+            navigation.setSelectedItemId(R.id.action_solve);
+        }
+
         navigation.setOnNavigationItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.action_pdf) {
-                // If the pdf option is chosen then a PdfGeneratorActivity is created ...
-                Intent intent2 = new Intent(this, PdfGeneratorActivity.class);
-                startActivity(intent2);
-            } else {
-                // ... otherwise a SudokuGridActivity is created
-                Intent intent2 = new Intent(this, SudokuGridActivity.class);
-                if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
-                    intent2.putExtra(INTENT_IS_GENERATOR_LABEL, true); // So that a generator is created
-                } else if (item.getItemId() == R.id.action_solve) {
-                    intent2.putExtra(INTENT_IS_GENERATOR_LABEL, false); // So that a solver is created
-                }
-                startActivity(intent2);
+            Intent intent2 = new Intent(this, SudokuGridActivity.class);
+            if (item.getItemId() == R.id.action_play) { // Checks which item is selected by checking the item id
+                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, true); // So that a generator is created
+            } else if (item.getItemId() == R.id.action_solve) {
+                intent2.putExtra(INTENT_IS_GENERATOR_LABEL, false); // So that a solver is created
             }
+            startActivity(intent2);
             // The selected item is not highlighted - it starts a new activity so the highlighting wouldn't be visible
             // anyway (and would be out of date if the user returns to this activity e.g. by pressing the back button)
             return false;
@@ -479,7 +495,7 @@ public class SudokuGridActivity extends AppCompatActivity {
             } else {
                 new AlertDialog.Builder(this).setTitle("Congratulations")
                         .setMessage("You have successfully solved the sudoku")
-                        .setPositiveButton("New game", (dialog, id) -> newGame())
+                        .setPositiveButton("New game", (dialog, id) -> newGame(false))
                         .setNegativeButton("Continue", (dialog, id) -> {})
                         .show();
             }
@@ -540,8 +556,7 @@ public class SudokuGridActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Currently the only item but adding code to check id in case I choose to add more items in the future
         if (item.getItemId() == R.id.new_sudoku) {
-            sudokuSaver.removeSudoku(); // Removes saved data about current sudoku
-            newGame(); // Starts a new game, showing a dialogue to the user
+            newGame(false); // Starts a new game, showing a dialogue to the user
         }
         return true;
     }
