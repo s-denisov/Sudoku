@@ -1,6 +1,7 @@
 package com.sdenisov.sudoku;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -56,6 +57,7 @@ public class SudokuGridActivity extends AppCompatActivity {
         newGame(true);
     }
 
+
     // firstGame determines whether this is the first game since the app was opened - used to decide whether to load
     // a sudoku or generate a new one
     private void newGame(boolean firstGame) {
@@ -63,8 +65,9 @@ public class SudokuGridActivity extends AppCompatActivity {
         // difficulty is zero or less for solver (I'll use -1)
         difficulty = intent.getBooleanExtra(INTENT_IS_GENERATOR_LABEL, true) ? 1 : -1;
 
-        // Note that this can only be called after we find out whether this is a generator or solver
+        // Note that these two methods can only be called after we find out whether this is a generator or solver
         setUpButtons();
+        setUpBottomNavigationView();
 
         // Gets the shared preferences and assigns them to the sharedPref attribute
         sharedPref = getPreferences(Context.MODE_PRIVATE);
@@ -122,97 +125,104 @@ public class SudokuGridActivity extends AppCompatActivity {
             new AlertDialog.Builder(this).setTitle("Options")
                     // sets the view for the dialog - this is positioned between the title and the submit button
                     .setView(options)
-                    .setPositiveButton("Submit", (dialog, id) -> { // The dialog and id parameters are not used by me
-
-                        // Resets all the variables to make sure the game is truly restarted
-                        selectedCell = null;
-                        sudokuData = null;
-                        cells.clear();
-
-                        // Resets the layout so that a new grid can be created
-                        setContentView(R.layout.activity_sudoku_grid);
-
-                        // The layout has been reset so the buttons have to be set up again
-                        setUpButtons();
-
-                        SharedPreferences.Editor editor = sharedPref.edit(); // Gets the editor from sharedPref
-
-                        RadioGroup size = options.findViewById(R.id.option_size);
-
-                        ProgressBar generatorProgress = findViewById(R.id.generator_progress);
-                        generatorProgress.setVisibility(View.VISIBLE);
-
-                        // Checks which radio box was selected by checking its id
-                        if (size.getCheckedRadioButtonId() == R.id.size6) {
-                            // A 6x6 grid has 3 rows of boxes and 2 columns of boxes
-                            boxRows = 3;
-                            boxColumns = 2;
-                        } else if (size.getCheckedRadioButtonId() == R.id.size9) {
-                            boxRows = 3;
-                            boxColumns = 3;
-
-                        } else {
-                            boxRows = 4;
-                            boxColumns = 3;
-                        }
-                        if (difficulty > 0) { // This only runs for the sudoku generator
-                            // If this is a generator sudoku then saves the selected grid size
-                            editor.putInt(GENERATOR_GRID_SIZE_KEY, size.getCheckedRadioButtonId());
-
-                            RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
-                            // Checks which radio button was selected and sets the difficulty to the corresponding value:
-                            if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
-                                difficulty = 1;
-                            } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_medium) {
-                                difficulty = 2;
-                            } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_hard) {
-                                difficulty = 3;
-                            } else {
-                                difficulty = 4;
-                            }
-                            // Saves the selected difficulty by saving the id of the selected radiobutton (as ids are
-                            // not changed when the app is restarted, even if the phone is switched off).
-                            editor.putInt(DIFFICULTY_KEY, difficultyOptions.getCheckedRadioButtonId());
-                        }
-                        editor.apply(); // Saves the changes to sharedPref
-
-                        // It is important that these lines use the correct boxRows and boxColumns values, so these lines
-                        // are placed after boxRows and boxColumns have been set up
-                        rows = boxRows * boxColumns;
-                        sudokuData = new SudokuData(boxRows, boxColumns);
-                        createGrid();
-                        createDigitButtons();
-                        updateGrid();
-
-                        // If this is a generator, then the lines below are run so that a sudoku is generated as soon
-                        // as the user opens the activity
-                        if (difficulty > 0) {
-                            // Shows progress bar to the user so that they can see the sudoku is being loaded and the app
-                            // didn't just freeze
-                            generatorProgress.setVisibility(View.VISIBLE);
-                            dialog.dismiss(); // Closes the dialog so that the progress bar is shown
-                            findViewById(R.id.table_grid).post(() -> { // Makes sure the lines below are executed only
-                                     // after all the other lines here (i.e. in the lambda in setPositiveButton).
-                                     // This means that the user will be shown an empty grid with a loading sign while
-                                     // the sudoku is being generated, allowing them to see that their request is being
-                                     // processed
-                                // Generates the sudoku
-                                sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
-                                updateGrid(); // Fills the grid with the generated sudoku
-                                generatorProgress.setVisibility(View.GONE); // Makes the progress bar invisible
-                                // Saves the sudoku so that it is loaded again if the app is restarted
-                                sudokuSaver.saveSudoku(sudokuData);
-                            });
-                        } else {
-                            // The progress bar is hidden in the solver
-                            generatorProgress.setVisibility(View.GONE);
-                        }
-                        // The sudoku is saved after it is generated so that it is loaded again if the user reopens
-                        // the app (this is for both the generator or solver)
-                        sudokuSaver.saveSudoku(sudokuData);
-                    }).show();
+                    .setPositiveButton("Submit", (dialog, id) -> newGameDialogOnSubmit((Dialog) dialog, options))
+                    // If this is the first game then can't be cancelled as if it is cancelled then the user would end
+                    // up without a grid
+                    .setCancelable(!firstGame)
+                    .show();
         }
+    }
 
+    private void newGameDialogOnSubmit(Dialog dialog, View options) {
+            // Resets all the variables to make sure the game is truly restarted
+            selectedCell = null;
+            sudokuData = null;
+            cells.clear();
+
+            // Resets the layout so that a new grid can be created
+            setContentView(R.layout.activity_sudoku_grid);
+
+            // The layout has been reset so the buttons and the BottomNavigationView have to be set up again
+            setUpButtons();
+            setUpBottomNavigationView();
+
+            SharedPreferences.Editor editor = sharedPref.edit(); // Gets the editor from sharedPref
+
+            RadioGroup size = options.findViewById(R.id.option_size);
+
+            ProgressBar generatorProgress = findViewById(R.id.generator_progress);
+            generatorProgress.setVisibility(View.VISIBLE);
+
+            // Checks which radio box was selected by checking its id
+            if (size.getCheckedRadioButtonId() == R.id.size6) {
+                // A 6x6 grid has 3 rows of boxes and 2 columns of boxes
+                boxRows = 3;
+                boxColumns = 2;
+            } else if (size.getCheckedRadioButtonId() == R.id.size9) {
+                boxRows = 3;
+                boxColumns = 3;
+            } else {
+                boxRows = 4;
+                boxColumns = 3;
+            }
+            if (difficulty > 0) { // This only runs for the sudoku generator
+                // If this is a generator sudoku then saves the selected grid size
+                editor.putInt(GENERATOR_GRID_SIZE_KEY, size.getCheckedRadioButtonId());
+
+                RadioGroup difficultyOptions = options.findViewById(R.id.option_difficulty);
+                // Checks which radio button was selected and sets the difficulty to the corresponding value:
+                if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_easy) {
+                    difficulty = 1;
+                } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_medium) {
+                    difficulty = 2;
+                } else if (difficultyOptions.getCheckedRadioButtonId() == R.id.difficulty_hard) {
+                    difficulty = 3;
+                } else {
+                    difficulty = 4;
+                }
+                // Saves the selected difficulty by saving the id of the selected radiobutton (as ids are
+                // not changed when the app is restarted, even if the phone is switched off).
+                editor.putInt(DIFFICULTY_KEY, difficultyOptions.getCheckedRadioButtonId());
+            }
+            editor.apply(); // Saves the changes to sharedPref
+
+            // It is important that these lines use the correct boxRows and boxColumns values, so these lines
+            // are placed after boxRows and boxColumns have been set up
+            rows = boxRows * boxColumns;
+            sudokuData = new SudokuData(boxRows, boxColumns);
+            createGrid();
+            createDigitButtons();
+            updateGrid();
+
+            // If this is a generator, then the lines below are run so that a sudoku is generated as soon
+            // as the user opens the activity
+            if (difficulty > 0) {
+                // Shows progress bar to the user so that they can see the sudoku is being loaded and the app
+                // didn't just freeze
+                generatorProgress.setVisibility(View.VISIBLE);
+                dialog.dismiss(); // Closes the dialog so that the progress bar is shown
+                findViewById(R.id.table_grid).post(() -> { // Makes sure the lines below are executed only
+                         // after all the other lines here (i.e. in the lambda in setPositiveButton).
+                         // This means that the user will be shown an empty grid with a loading sign while
+                         // the sudoku is being generated, allowing them to see that their request is being
+                         // processed
+                    // Generates the sudoku
+                    sudokuData = SudokuGenerator.generate(difficulty, boxRows, boxColumns);
+                    updateGrid(); // Fills the grid with the generated sudoku
+                    generatorProgress.setVisibility(View.GONE); // Makes the progress bar invisible
+                    // Saves the sudoku so that it is loaded again if the app is restarted
+                    sudokuSaver.saveSudoku(sudokuData);
+                });
+            } else {
+                // The progress bar is hidden in the solver
+                generatorProgress.setVisibility(View.GONE);
+            }
+            // The sudoku is saved after it is generated so that it is loaded again if the user reopens
+            // the app (this is for both the generator or solver)
+            sudokuSaver.saveSudoku(sudokuData);
+    }
+
+    private void setUpBottomNavigationView() {
         BottomNavigationView navigation = findViewById(R.id.navigation);
 
         if (difficulty <= 0) {
