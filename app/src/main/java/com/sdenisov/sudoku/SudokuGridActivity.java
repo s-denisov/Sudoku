@@ -57,6 +57,29 @@ public class SudokuGridActivity extends AppCompatActivity {
         newGame(true);
     }
 
+    // Called whenever the activity is resumed - in particular when returning from another activity when clicking the
+    // back button. This loads the saved sudoku, thus handling the case where the user starts with the generator,
+    // goes to the solver, start the generator again, starts a new game and pressing the back button twice - before, the
+    // old sudoku would've been showed but now the new one is showed, which is the expected behaviour.
+    @Override
+    protected void onResume() {
+        super.onResume();
+        SudokuData newSudokuData = sudokuSaver.loadSudoku();
+        // If newSudokuData is null then this is the first time opening the app so the lines below aren't necessary.
+        if (newSudokuData != null) {
+            if (newSudokuData.getRows() == rows) {
+                // If the loaded grid has the same size as this one then the current grid can be directly updated using the
+                // new sudokuData
+                sudokuData = newSudokuData;
+                updateGridIncludingNotes();
+            } else {
+                // Otherwise, a new grid has to be created, which can be done by calling newGame - this is because we know
+                // a grid is saved so the if (firstGame && sudokuSaver.loadSudoku() != null) statement will be run,
+                // creating a new grid of the correct size
+                newGame(true);
+            }
+        }
+    }
 
     // firstGame determines whether this is the first game since the app was opened - used to decide whether to load
     // a sudoku or generate a new one
@@ -96,6 +119,13 @@ public class SudokuGridActivity extends AppCompatActivity {
         // A sudoku can only be loaded when the app is opened (i.e. firstGame is true) as at other times, the user has
         // requested a new sudoku so wouldn't want for their current one to be loaded
         if (firstGame && sudokuSaver.loadSudoku() != null) { // If a sudoku can be loaded ...
+            cells.clear(); // Clears the cells list, as it will be repopulated by createGrid()
+            // Needed for redrawing a sudoku in onResume - sudoku size might change so layout needs to be reset.
+            // Not needed when first loading the app but isn't harmful either
+            setContentView(R.layout.activity_sudoku_grid);
+            setUpButtons();
+            setUpBottomNavigationView();
+
             sudokuData = sudokuSaver.loadSudoku(); // Loads a sudoku
             // Sets boxRows, boxColumns and rows attributes of this class (SudokuGridActivity) based on the attributes
             // of sudokuData
@@ -104,15 +134,8 @@ public class SudokuGridActivity extends AppCompatActivity {
             rows = boxRows * boxColumns;
             createGrid(); // Creates a grid of the correct size
             createDigitButtons(); // Creates the digit buttons at the bottom of the grid, including the "X" button
+            updateGridIncludingNotes();
 
-            for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
-                // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
-                if (sudokuData.getValue(i).hasNotes()) {
-                    // Shows the notes to the user
-                    updateCellNotes(cells.get(i), sudokuData.getValue(i).notes, true);
-                }
-            }
-            updateGrid(); // Updates cells in the grid to show values from sudokuData (rather than just notes)
             ProgressBar generatorProgress = findViewById(R.id.generator_progress);
             generatorProgress.setVisibility(View.GONE); // The sudoku has now been loaded so the progress bar is removed
         } // If a sudoku can't be loaded then a dialogue is shown allowing the user to select the size (and the
@@ -434,15 +457,20 @@ public class SudokuGridActivity extends AppCompatActivity {
             columnLoop:
             for (int column = 0; column < rows; column++) {
                 SudokuData.SudokuCell cellData = sudokuData.getValue(row, column);
+                // row * rows + column is used for index - e.g. if row = 0 and column = 1 then index is rows,
+                // which is correct, as the for loop has just iterated through all columns in the first row,
+                // so the number of cells it has iterated through equals the number of columns which equals rows.
                 SudokuCellView cell = cells.get(row * rows + column);
                 if (cellData.getValue() != null) {
-                    // row * rows + column is used for index - e.g. if row = 0 and column = 1 then index is rows,
-                    // which is correct, as the for loop has just iterated through all columns in the first row,
-                    // so the number of cells it has iterated through equals the number of columns which equals rows.
+                    // Same line as in setCellValue - makes sure cell value is displayed correctly by autoscaling the
+                    // text to fill the cell
+                    TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(cell, 1, 400,
+                            1, TypedValue.COMPLEX_UNIT_DIP);
 
                     // Updates the text and the text color
                     cell.setText(String.valueOf(cellData.getValue()));
                     cell.setTextColor(cellData.getColor());
+
 
                     // I will consider updating the notes as well, but it isn't necessarily for now, as currently
                     // whenever any notes are changed, updateCellNotes is called (manually)
@@ -457,6 +485,17 @@ public class SudokuGridActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    private void updateGridIncludingNotes() {
+        for (int i = 0; i < cells.size(); i++) { // Iterates through each SudokuCellView in order
+            // If statement means only calls updateCellNotes if the cell has notes, to make the code more efficient
+            if (sudokuData.getValue(i).hasNotes()) {
+                // Shows the notes to the user
+                updateCellNotes(cells.get(i), sudokuData.getValue(i).notes, true);
+            }
+        }
+        updateGrid(); // Updates cells in the grid to show values from sudokuData (rather than just notes)
     }
 
     private void updateCellNotes(SudokuCellView cell, boolean[] notes, boolean loadingSudoku) {
