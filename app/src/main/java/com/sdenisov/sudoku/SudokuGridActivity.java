@@ -380,38 +380,36 @@ public class SudokuGridActivity extends AppCompatActivity {
             }
             Button digit = (Button) view;
             ToggleButton noteMode = findViewById(R.id.toggle_notes);
-            if (noteMode.isChecked()) { // If note mode is on
-                if (digit.getText() != BACKSPACE_BUTTON_TEXT) { // The backspace button is ignored in note mode
-                    // Finds the value chosen by converting the button's text to an integer
-                    int valueChosen = Integer.parseInt(String.valueOf(digit.getText()));
-                    // Toggles the value of the corresponding note by flipping its boolean value.
-                    // Note that the index is valueChosen - 1 as an index of 0 corresponds to note number 1.
-                    cellData.notes[valueChosen - 1] = !cellData.notes[valueChosen - 1];
-                    cellData.setValue(null); // Removes the value as notes cannot coexist with a value
-                    updateCellNotes(selectedCell, cellData.notes, false); // Displays the changes to the user
-                }
+            // Checks if the digit is the backspace digit by checking its text
+            if (digit.getText() == BACKSPACE_BUTTON_TEXT) {
+                selectedCell.setText(""); // Removes the text
+                cellData.setValue(null); // Removes the value form sudokuData
+                Arrays.fill(cellData.notes, false); // Removes all notes
+                // This cell is empty so is now allowed to be modified so is no longer initial
+                cellData.setInitialValue(false);
+            } else if (noteMode.isChecked()) { // If note mode is on
+                // Finds the value chosen by converting the button's text to an integer
+                int valueChosen = Integer.parseInt(String.valueOf(digit.getText()));
+                // Toggles the value of the corresponding note by flipping its boolean value.
+                // Note that the index is valueChosen - 1 as an index of 0 corresponds to note number 1.
+                cellData.notes[valueChosen - 1] = !cellData.notes[valueChosen - 1];
+                cellData.setValue(null); // Removes the value as notes cannot coexist with a value
+                updateCellNotes(selectedCell, cellData.notes, false); // Displays the changes to the user
             } else {
                 // Sets text autoscaling - if autoscaling has been removed by updateCellNotes then this undoes that
                 // change
                 TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(selectedCell, 1, 400,
                         1, TypedValue.COMPLEX_UNIT_DIP);
-                // Checks if the digit is the backspace digit by checking its text
-                // Removes all notes as notes cannot exist together with a
-                if (digit.getText() == BACKSPACE_BUTTON_TEXT) {
-                    selectedCell.setText("");
-                    cellData.setValue(null);
-                    // This cell is empty so is now allowed to be modified so is no longer initial
-                    cellData.setInitialValue(false);
-                } else {
-                    selectedCell.setText(digit.getText());
-                    // Note that the value of the button's text can be converted to an integer, as the only button
-                    // where this is not allowed is the backspace button, and we know that this isn't the backspace
-                    // button.
-                    cellData.setValue(Integer.parseInt(String.valueOf(digit.getText())));
-                    // This is a value entered by the player, so is initial for the solver and not initial for the
-                    // generator
-                    cellData.setInitialValue(difficulty <= 0);
-                }
+
+                // Note that the value of the button's text can be converted to an integer, as the only button
+                // where this is not allowed is the backspace button, and we know that this isn't the backspace
+                // button.
+                selectedCell.setText(digit.getText());
+                cellData.setValue(Integer.parseInt(String.valueOf(digit.getText())));
+                // This is a value entered by the player, so is initial for the solver and not initial for the
+                // generator
+                cellData.setInitialValue(difficulty <= 0);
+
                 // Removes all notes as notes cannot coexist with a value
                 Arrays.fill(cellData.notes, false);
             }

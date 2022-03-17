@@ -8,8 +8,4 @@
           android:title="Solve"
           android:icon="@drawable/baseline_question_mark_24"
     />
-    <item android:id="@+id/action_pdf"
-          android:title="PDF"
-          android:icon="@drawable/baseline_file_download_24"
-    />
 </menu>
