@@ -124,9 +124,10 @@ public class SudokuData {
         return boxColumns;
     }
 
-    // Returns an array of indexes - if there are duplicates, then it contains the indexes of the two duplicates.
-    // If there are no duplicates then it is an empty array.
-    private int[] checkDuplicates(SudokuCell[] items) {
+    // Returns a list of indexes - if there are duplicates, then it contains the indexes of all the duplicates.
+    // If there are no duplicates then it is an empty list.
+    private List<Integer> checkDuplicates(SudokuCell[] items) {
+        List<Integer> result = new ArrayList<>();
         // The two for loops iterate through all possible pairs of indexes
         for (int i = 0; i < items.length - 1; i++) {
             SudokuCell item = items[i];
@@ -135,11 +136,12 @@ public class SudokuData {
             for (int j = i + 1; j < items.length; j++) {
                 // Need to check that item.value is not null because two empty cells are not considered duplicates
                 if (item.getValue() != null && item.getValue().equals(items[j].getValue())) {
-                    return new int[]{i, j};
+                    result.add(i);
+                    result.add(j);
                 }
             }
         }
-        return new int[]{};
+        return result;
     }
 
     // Returns a list of coordinates with errors, with coordinates being a tuple in the form (row, column).
@@ -148,19 +150,19 @@ public class SudokuData {
         List<Tuple2<Integer, Integer>> result = new ArrayList<>();
 
         for (int row = 0; row < getRows(); row++) {
-            int[] duplicates = checkDuplicates(values[row]);
+            List<Integer> duplicates = checkDuplicates(values[row]);
 
             // Detects row duplicates
-            if (duplicates.length != 0) {
+            if (duplicates.size() != 0) {
                 // Creating another variable that is equal to the current value of row but doesn't change, as values
                 // used in lambda expressions are not allowed to change.
                 int finalRow = row;
-                // The mapToObj method applies the inputted function to each item in the array, creating a new list
+                // The map method applies the inputted function to each item in the duplicates list, creating a new list
                 // out of the result (note that .collect is used to specify the output should be a list).
-                result.addAll(Arrays.stream(duplicates).mapToObj(column ->
+                result.addAll(duplicates.stream().map(column ->
                         new Tuple2<>(finalRow, column)).collect(Collectors.toList()));
-                // The row is the same for the two items but the column is equals the index in the array for the
-                // current row, which is equal to one of the values in the array result of checkDuplicates
+                // The row is the same for each item but the column is equal to the index in the array for the
+                // current row, which is equal to one of the values in the list result of checkDuplicates
             }
         }
 
@@ -172,10 +174,10 @@ public class SudokuData {
                 currentColumn[row] = values[row][column];
             }
             // After the currentColumn array is created, this works like the code that checks for row duplicates
-            int[] duplicates = checkDuplicates(currentColumn);
-            if (duplicates.length != 0) {
+            List<Integer> duplicates = checkDuplicates(currentColumn);
+            if (duplicates.size() != 0) {
                 int finalColumn = column;
-                result.addAll(Arrays.stream(duplicates).mapToObj(row ->
+                result.addAll(duplicates.stream().map(row ->
                                 new Tuple2<>(row, finalColumn)).collect(Collectors.toList()));
             }
         }
@@ -199,11 +201,11 @@ public class SudokuData {
                         // The corresponding logic works for columns
                     }
                 }
-                int[] duplicates = checkDuplicates(currentBox);
-                if (duplicates.length != 0) {
+                List<Integer> duplicates = checkDuplicates(currentBox);
+                if (duplicates.size() != 0) {
                     int finalBoxLocationRow = boxLocationRow;
                     int finalBoxLocationColumn = boxLocationColumn;
-                    result.addAll(Arrays.stream(duplicates).mapToObj(x ->
+                    result.addAll(duplicates.stream().map(x ->
                                     // To find the row, we add the number of previous rows from other boxes to the
                                     // row in this
                                     // box, which is found using x DIV boxRows as the index goes from left to right,
