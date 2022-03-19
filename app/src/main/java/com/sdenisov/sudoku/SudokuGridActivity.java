@@ -505,20 +505,21 @@ public class SudokuGridActivity extends AppCompatActivity {
     }
 
     private void updateCellNotes(SudokuCellView cell, boolean[] notes, boolean loadingSudoku) {
-        // loadingSudoku is true if this is notes from initially loading the sudoku and is false if these are notes
-        // that the user is adding right now
-        if (!loadingSudoku) {
+        if (rows < 9) {
+            if (!loadingSudoku) {
+                // Through trial and error, I found that dividing by boxRows + 1 gives the best results
+                cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
+            }
+
             // This line removes the text auto sizing that was set by another line
-            // When adding notes after generating a sudoku, this line is required for notes to be displayed correctly
-            // so is run. When adding notes after loading a sudoku, notes are still displayed correctly with this line
-            // so there's no harm running it.
-            // When loading a sudoku, this line results in notes not being displayed (for some reason) but if this line
-            // is not run then notes are displayed correctly, so it is not run.
             TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
+        } else {
+            if (!loadingSudoku) {
+                TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
+            }
+
+            cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
         }
-        // Through trial and error, I found that dividing by boxRows + 1 gives the best results
-        // As each cell has the same width, this value should be the same for each cell
-        cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
 
         // Uses a StringBuilder instead of just concatenating to a string, as the StringBuilder has better performance
         StringBuilder result = new StringBuilder("");
