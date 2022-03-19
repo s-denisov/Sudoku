@@ -414,17 +414,9 @@ public class SudokuGridActivity extends AppCompatActivity {
                 Arrays.fill(cellData.notes, false);
             }
         }
-        List<Tuple2<Integer, Integer>> errorCoordinates = sudokuData.findErrors();
-        for (SudokuCellView cell : cells) {
-            // Checks if the list of error coordinates contains the coordinates of this cell ...
-            if (errorCoordinates.contains(new Tuple2<>(cell.row, cell.column))) {
-                // ... then the cell has an error so its color is set to the error color (red)
-                cell.setTextColor(Color.RED);
-            } else {
-                // If the cell doesn't have an error then its color is set to its old color
-                cell.setTextColor(sudokuData.getValue(cell.row, cell.column).getColor());
-            }
-        }
+
+        updateErrorColoring();
+
         // Saves the sudoku so that any changes made by the user are automatically saved
         sudokuSaver.saveSudoku(sudokuData);
     }
@@ -447,6 +439,21 @@ public class SudokuGridActivity extends AppCompatActivity {
         border.setStroke(5, ContextCompat.getColor(this, R.color.design_default_color_primary)); // border
         cell.setBackground(border);
         selectedCell = sudokuCellView;
+    }
+
+    // Colours any cells with errors in red and any cells without errors in black or grey
+    private void updateErrorColoring() {
+        List<Tuple2<Integer, Integer>> errorCoordinates = sudokuData.findErrors();
+        for (SudokuCellView cell : cells) {
+            // Checks if the list of error coordinates contains the coordinates of this cell ...
+            if (errorCoordinates.contains(new Tuple2<>(cell.row, cell.column))) {
+                // ... then the cell has an error so its color is set to the error color (red)
+                cell.setTextColor(sudokuData.getValue(cell.row, cell.column).getErrorColor());
+            } else {
+                // If the cell doesn't have an error then its color is set to its old color
+                cell.setTextColor(sudokuData.getValue(cell.row, cell.column).getColor());
+            }
+        }
     }
 
     // Updates the grid, so that it displays all up-to-date information from SudokuData
@@ -483,6 +490,7 @@ public class SudokuGridActivity extends AppCompatActivity {
                 }
             }
         }
+        updateErrorColoring(); // Part of updating the grid is also highlighting any errors
     }
 
     private void updateGridIncludingNotes() {

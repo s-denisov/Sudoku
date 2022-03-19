@@ -55,6 +55,12 @@ public class SudokuData {
             return initialValue ? Color.BLACK : Color.GRAY;
         }
 
+        // Finds color like getColor, but for cells with an error
+        // The rgb color is light red from https://www.color-name.com/light-red.color
+        public int getErrorColor() {
+            return initialValue ? Color.RED : Color.rgb(255, 127, 127);
+        }
+
         public boolean hasNotes() {
             for (boolean note : notes) {
                 if (note) return true; // If note is true for any element of notes then has a note so return true ...
@@ -137,8 +143,10 @@ public class SudokuData {
     }
 
     // Returns a list of coordinates with errors, with coordinates being a tuple in the form (row, column).
-    // Currently, this list contains either two coordinates or is empty.
     public List<Tuple2<Integer, Integer>> findErrors() {
+        // The list of all the errors. It is returned at the end.
+        List<Tuple2<Integer, Integer>> result = new ArrayList<>();
+
         for (int row = 0; row < getRows(); row++) {
             int[] duplicates = checkDuplicates(values[row]);
 
@@ -149,8 +157,8 @@ public class SudokuData {
                 int finalRow = row;
                 // The mapToObj method applies the inputted function to each item in the array, creating a new list
                 // out of the result (note that .collect is used to specify the output should be a list).
-                return Arrays.stream(duplicates).mapToObj(column ->
-                        new Tuple2<>(finalRow, column)).collect(Collectors.toList());
+                result.addAll(Arrays.stream(duplicates).mapToObj(column ->
+                        new Tuple2<>(finalRow, column)).collect(Collectors.toList()));
                 // The row is the same for the two items but the column is equals the index in the array for the
                 // current row, which is equal to one of the values in the array result of checkDuplicates
             }
@@ -167,9 +175,8 @@ public class SudokuData {
             int[] duplicates = checkDuplicates(currentColumn);
             if (duplicates.length != 0) {
                 int finalColumn = column;
-                return Arrays.stream(duplicates).mapToObj(row ->
-                                new Tuple2<>(row, finalColumn))
-                        .collect(Collectors.toList());
+                result.addAll(Arrays.stream(duplicates).mapToObj(row ->
+                                new Tuple2<>(row, finalColumn)).collect(Collectors.toList()));
             }
         }
 
@@ -196,7 +203,7 @@ public class SudokuData {
                 if (duplicates.length != 0) {
                     int finalBoxLocationRow = boxLocationRow;
                     int finalBoxLocationColumn = boxLocationColumn;
-                    return Arrays.stream(duplicates).mapToObj(x ->
+                    result.addAll(Arrays.stream(duplicates).mapToObj(x ->
                                     // To find the row, we add the number of previous rows from other boxes to the
                                     // row in this
                                     // box, which is found using x DIV boxRows as the index goes from left to right,
@@ -206,11 +213,11 @@ public class SudokuData {
                                     // boxRows.
                                     new Tuple2<>(finalBoxLocationRow * boxColumns + x / boxRows,
                                             finalBoxLocationColumn * boxRows + x % boxRows))
-                            .collect(Collectors.toList());
+                            .collect(Collectors.toList()));
                 }
             }
         }
-        return new ArrayList<>();
+        return result;
     }
 
     // A group is a row, column or box - this function doesn't distinguish them. This function takes a row or column and
