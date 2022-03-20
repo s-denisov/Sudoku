@@ -505,19 +505,25 @@ public class SudokuGridActivity extends AppCompatActivity {
     }
 
     private void updateCellNotes(SudokuCellView cell, boolean[] notes, boolean loadingSudoku) {
+        // While experimenting, I have found that when entering values, both the autosizing and the text size line
+        // need to be run (with the autosizing line first), but when loading a sudoku, only one of these lines needs
+        // to be run - the autosizing line for the 6x6 sudoku and the text size line for other sudokus. I can't run
+        // both lines when loading the sudoku as this results in the notes not being displayed
         if (rows < 9) {
-            if (!loadingSudoku) {
-                // Through trial and error, I found that dividing by boxRows + 1 gives the best results
-                cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
-            }
-
-            // This line removes the text auto sizing that was set by another line
             TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
+
+            if (!loadingSudoku) {
+                // Through trial and error, I found that dividing by boxRows + 1.6 gives the best results for the
+                // 6x6 grid
+                cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (float) (boxRows + 1.6));
+            }
         } else {
             if (!loadingSudoku) {
                 TextViewCompat.setAutoSizeTextTypeWithDefaults(cell, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE);
             }
 
+            // Through trial and error, I found that dividing by boxRows + 1 gives the best results for the
+            // 9x9 and 12x12 grids
             cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) cell.getWidth() / (boxRows + 1));
         }
 
