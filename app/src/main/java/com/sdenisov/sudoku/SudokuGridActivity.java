@@ -539,7 +539,6 @@ public class SudokuGridActivity extends AppCompatActivity {
                             // added then a space is added instead.
                             i % (i < 10 ? boxRows : boxRows / 2) == 0 ? "\n" : " ");
         }
-        Log.d("project", result.toString());
         cell.setText(result);
         cell.setTextColor(Color.GRAY);
     }
@@ -567,7 +566,6 @@ public class SudokuGridActivity extends AppCompatActivity {
             // The time taken by the solver is found by recording the system time before and after and finding the
             // difference. It is also divided by a billion to convert from nanoseconds to seconds.
             Log.d("project", String.valueOf((double) (System.nanoTime() - before) / 1_000_000_000));
-            Log.d("project", String.valueOf(difficulty));
             if (difficulty != -1) {
                 // If a solution exists then the button is set to "Unsolve" to allow the user to easily remove all
                 // the filled values
