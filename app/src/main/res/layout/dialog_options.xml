@@ -5,22 +5,22 @@
     <RadioGroup android:id="@+id/option_size"
             android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
         <RadioButton android:id="@+id/size6" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                     android:text="6x6"/>
+                     android:text="6x6" android:textSize="12sp"/>
         <RadioButton android:id="@+id/size9" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                     android:text="9x9"/>
+                     android:text="9x9" android:textSize="12sp"/>
         <RadioButton android:id="@+id/size12" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                     android:text="12x12"/>
+                     android:text="12x12" android:textSize="12sp"/>
     </RadioGroup>
 
     <RadioGroup android:id="@+id/option_difficulty"
                 android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
         <RadioButton android:id="@+id/difficulty_easy" android:layout_width="wrap_content"
-                     android:layout_height="wrap_content" android:text="Easy"/>
+                     android:layout_height="wrap_content" android:text="Easy" android:textSize="12sp" />
         <RadioButton android:id="@+id/difficulty_medium" android:layout_width="wrap_content"
-                     android:layout_height="wrap_content" android:text="Medium"/>
+                     android:layout_height="wrap_content" android:text="Medium" android:textSize="12sp" />
         <RadioButton android:id="@+id/difficulty_hard" android:layout_width="wrap_content"
-                     android:layout_height="wrap_content" android:text="Hard"/>
+                     android:layout_height="wrap_content" android:text="Hard" android:textSize="12sp" />
         <RadioButton android:id="@+id/difficulty_unlimited" android:layout_width="wrap_content"
-                     android:layout_height="wrap_content" android:text="Unlimited"/>
+                     android:layout_height="wrap_content" android:text="Unlimited" android:textSize="12sp" />
     </RadioGroup>
 </LinearLayout>
